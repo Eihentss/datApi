@@ -9,7 +9,7 @@ export default function Docx(auth) {
             <Head title="API Builder Dokumentācija" />
             <div className="min-h-screen bg-gray-50 text-black">
                 {/* Navbar */}
-        <Navbar auth={auth} />
+                    <Navbar auth={auth} />
 
                 {/* Main Content */}
                 <div className="pt-24 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -115,14 +115,14 @@ export default function Docx(auth) {
                         </p>
                         <pre className="bg-black text-green-400 p-4 rounded-lg overflow-x-auto mt-2">
                             {`{
-  "users": [
-    {
-      "id": 1,
-      "name": "Jānis Bērziņš",
-      "email": "janis@example.com"
-    }
-  ]
-}`}
+                                "users": [
+                                    {
+                                    "id": 1,
+                                    "name": "Jānis Bērziņš",
+                                    "email": "janis@example.com"
+                                    }
+                                ]
+                                }`}
                         </pre>
                     </section>
 

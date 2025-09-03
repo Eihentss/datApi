@@ -13,6 +13,8 @@ import {
     Users,
     Shield,
     Rocket,
+    Cross,
+    
 } from "lucide-react";
 import { usePage } from "@inertiajs/react";
 export default function Welcome({ auth }) {
@@ -355,7 +357,7 @@ export default function Welcome({ auth }) {
                                         CORS atbalsts
                                     </li>
                                     <li className="flex items-center">
-                                        <Check className="w-4 h-4 mr-2 text-green-500" />{" "}
+                                        <Cross className="w-4 h-4 mr-2 text-red-500" />{" "}
                                         HTTPS šifrēšana
                                     </li>
                                 </ul>

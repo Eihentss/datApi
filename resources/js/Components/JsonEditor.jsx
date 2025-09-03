@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { jsonrepair } from "jsonrepair";
 
-// Toast komponents
 function Toast({ message, type, onClose }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -27,7 +26,6 @@ export default function DataEditor({ format, data, setData }) {
     validateData(data, format);
   }, [data, format]);
 
-  // Sinhronizē skrollēšanu starp rindu numerāciju un textarea
   const handleScroll = () => {
     if (lineNumbersRef.current && textareaRef.current) {
       lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
@@ -64,17 +62,13 @@ export default function DataEditor({ format, data, setData }) {
     try {
       let repairedData = data.trim();
       
-      // Mēģina dažādus labošanas veidus
       let attempts = [
-        // 1. Izmēģina jsonrepair kā parasti
         () => {
           const repaired = jsonrepair(repairedData);
           return JSON.stringify(JSON.parse(repaired), null, 2);
         },
         
-        // 2. Mēģina pārveidot vairākus objektus par masīvu
         () => {
-          // Noņem whitespace un sadala objektus
           const objects = repairedData
             .split(/}\s*{/)
             .map((part, index, array) => {
@@ -86,7 +80,6 @@ export default function DataEditor({ format, data, setData }) {
             .filter(part => part.trim());
 
           if (objects.length > 1) {
-            // Mēģina parsēt katru objektu atsevišķi
             const parsedObjects = objects.map(obj => {
               const cleaned = obj.trim();
               try {
@@ -101,7 +94,6 @@ export default function DataEditor({ format, data, setData }) {
           throw new Error("Nav vairāki objekti");
         },
         
-        // 3. Mēģina pievienot komatus starp objektiem
         () => {
           const withCommas = repairedData.replace(/}\s*{/g, '},{');
           const arrayFormat = '[' + withCommas + ']';
@@ -109,9 +101,7 @@ export default function DataEditor({ format, data, setData }) {
           return JSON.stringify(JSON.parse(repaired), null, 2);
         },
         
-        // 4. Mēģina tikai ar jsonrepair pēc pamata tīrīšanas
         () => {
-          // Noņem liekos simbolus un mēģina labot
           const cleaned = repairedData
             .replace(/}\s*{/g, '},{')
             .replace(/^\s*/, '[')
@@ -122,7 +112,6 @@ export default function DataEditor({ format, data, setData }) {
         }
       ];
       
-      // Izmēģina katru metodi pēc kārtas
       let lastError;
       for (let attempt of attempts) {
         try {
@@ -137,7 +126,6 @@ export default function DataEditor({ format, data, setData }) {
         }
       }
       
-      // Ja neviens variants nestrādāja
       throw lastError || new Error("Nevarēja salabot JSON");
       
     } catch (err) {
@@ -169,7 +157,6 @@ export default function DataEditor({ format, data, setData }) {
     <div className="bg-white rounded-2xl shadow p-8 space-y-6">
       <div className="border rounded-lg overflow-hidden h-[600px] relative">
         <div className="flex h-full">
-          {/* Rindu numerācija */}
           <div 
             ref={lineNumbersRef}
             className="bg-gray-900 text-gray-400 font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
@@ -187,7 +174,6 @@ export default function DataEditor({ format, data, setData }) {
             </div>
           </div>
           
-          {/* Galvenā textarea */}
           <textarea
             ref={textareaRef}
             value={data}
