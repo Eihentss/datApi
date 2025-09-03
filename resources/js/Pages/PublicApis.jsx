@@ -13,7 +13,7 @@ export default function PublicApis({ resources }) {
 
     const openApi = (route) => {
         const slug = route.startsWith("/") ? route.slice(1) : route;
-        window.open(`/${slug}`, "_blank"); 
+        window.open(`/${slug}`, "_blank");
     };
 
     const filteredResources = resources.filter((res) => {
@@ -42,7 +42,7 @@ export default function PublicApis({ resources }) {
         <>
             <Head title="Publiski API" />
             <div className="min-h-screen bg-gray-50 text-black">
-                  <Navbar auth={auth} />
+                <Navbar auth={auth} />
 
                 <div className="pt-24 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
                     <h1 className="text-4xl font-bold mb-8 text-center">Publiski pieejamie API</h1>
@@ -70,7 +70,7 @@ export default function PublicApis({ resources }) {
                                     <div
                                         key={res.id}
                                         onClick={() => openApi(res.route)}
-                                        className="bg-white rounded-2xl shadow p-6 cursor-pointer hover:shadow-lg hover:bg-gray-50 transition"
+                                        className="bg-white rounded-2xl shadow p-6 cursor-pointer hover:shadow-lg hover:bg-gray-50 transition relative"
                                     >
                                         <h2 className="text-xl font-semibold mb-2">{res.route}</h2>
                                         <p>
@@ -80,12 +80,23 @@ export default function PublicApis({ resources }) {
                                                 res.allow_get && "GET",
                                                 res.allow_post && "POST",
                                                 res.allow_put && "PUT",
-                                                res.allow_delete && "DELETE"
-                                            ].filter(Boolean).join(", ")}
+                                                res.allow_delete && "DELETE",
+                                            ]
+                                                .filter(Boolean)
+                                                .join(", ")}
                                         </p>
+
+                                        {/* Datums apakšā pa labi */}
+                                        <span className="absolute bottom-3 right-3 text-gray-400 text-sm">
+                                            Izveidots:{" "}
+                                            {res.created_at
+                                                ? new Date(res.created_at.replace(" ", "T")).toLocaleString()
+                                                : "Nezināms"}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
+
 
                             {totalPages > 1 && (
                                 <div className="flex justify-center items-center gap-4 mt-8">

@@ -57,27 +57,8 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/public-apis', [ApiResourceController::class, 'publicApis'])->name('public-apis');
 
 Route::middleware(['auth'])->group(function () {
-    // Rāda React komponenti ManiApi un nodod tajā lietotāja API datus
-    Route::get('/maniapi', function () {
-        $userId = auth()->id();
-
-        $resources = ApiResource::where('user_id', $userId)
-            ->get([
-                'id',
-                'route',
-                'format',
-                'allow_get',
-                'allow_post',
-                'allow_put',
-                'allow_delete',
-                'visibility',
-                'created_at',
-            ]);
-
-        return Inertia::render('ManiApi', [
-            'resources' => $resources,
-        ]);
-    })->name('maniapi');
+    Route::get('/maniapi', [\App\Http\Controllers\ApiResourceController::class, 'userApis'])
+        ->name('maniapi');
 });
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

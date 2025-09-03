@@ -6,7 +6,10 @@ export default function ManiApi() {
 
     // Loading ir true tikai tad, ja resources nav vēl padoti
     const loading = resources === undefined;
-
+    const openApi = (route) => {
+        const slug = route.startsWith("/") ? route.slice(1) : route;
+        window.open(`/${slug}`, "_blank");
+    };
     return (
         <>
             <Head title="Mani API" />
@@ -28,6 +31,7 @@ export default function ManiApi() {
                         {resources.map((res) => (
                             <div
                                 key={res.id}
+                                onClick={() => openApi(res.route)}
                                 className="bg-white rounded-2xl shadow p-6 hover:shadow-lg transition cursor-pointer relative"
                             >
                                 <h2 className="text-xl font-semibold mb-2">

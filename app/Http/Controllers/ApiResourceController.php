@@ -19,34 +19,45 @@ class ApiResourceController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'route' => [
-                'required',
-                'string',
-                'max:255',
-                'regex:/^\/[a-zA-Z0-9_-]+$/',
-                'unique:api_resources,route',
-            ],
-            'visibility' => 'required|in:public,private',
+        $request->validate([
+            'route' => 'required|string|max:255',
             'format' => 'required|in:json,xml,csv',
-            'allow_get' => 'boolean',
-            'allow_post' => 'boolean',
-            'allow_put' => 'boolean',
-            'allow_delete' => 'boolean',
-            'schema' => 'required|array',
         ]);
-
-        if (!($data['allow_get'] || $data['allow_post'] || $data['allow_put'] || $data['allow_delete'])) {
-            return back()
-                ->withErrors(['methods' => 'Jāatzīmē vismaz viena metode.'])
-                ->withInput();
+    
+        $route = $request->input('route');
+    
+        if (str_starts_with($route, '/api')) {
+            return response()->json([
+                'message' => "Route nevar sākties ar '/api'!"
+            ], 422);
         }
-
-        $data['user_id'] = auth()->id();
-
-        $resource = ApiResource::create($data);
-
-        return redirect()->route('Create')->with('success', 'API saglabāts veiksmīgi!');
+    
+        $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
+        if (in_array(ltrim($route, '/'), $existingRoutes)) {
+            return response()->json([
+                'message' => 'Šāds route jau eksistē sistēmā!'
+            ], 422);
+        }
+    
+        if (\App\Models\ApiResource::where('route', $route)->exists()) {
+            return response()->json([
+                'message' => 'Šāds route jau eksistē datubāzē!'
+            ], 422);
+        }
+    
+        $resource = new \App\Models\ApiResource();
+        $resource->user_id = $request->user()->id;
+        $resource->route = $route;
+        $resource->format = $request->input('format');
+        $resource->visibility = $request->input('visibility');
+        $resource->allow_get = $request->boolean('allow_get');
+        $resource->allow_post = $request->boolean('allow_post');
+        $resource->allow_put = $request->boolean('allow_put');
+        $resource->allow_delete = $request->boolean('allow_delete');
+        $resource->schema = $request->input('schema');
+        $resource->save();
+    
+        return response()->json(['message' => 'API saglabāts!']);
     }
 
      public function publicApis()
@@ -54,6 +65,28 @@ class ApiResourceController extends Controller
         $resources = ApiResource::where('visibility', 'public')->get();
 
         return Inertia::render('PublicApis', [
+            'resources' => $resources,
+        ]);
+    }
+
+    public function userApis(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $resources = ApiResource::where('user_id', $userId)
+            ->get([
+                'id',
+                'route',
+                'format',
+                'allow_get',
+                'allow_post',
+                'allow_put',
+                'allow_delete',
+                'visibility',
+                'created_at',
+            ]);
+
+        return Inertia::render('ManiApi', [
             'resources' => $resources,
         ]);
     }
