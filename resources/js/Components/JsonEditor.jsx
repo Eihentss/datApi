@@ -1,23 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { jsonrepair } from "jsonrepair";
+import Toast from "@/Components/Toast";
 
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
 
-  return (
-    <div className={`fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
-      type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
-    }`}>
-      {message}
-    </div>
-  );
-}
+
 
 export default function DataEditor({ format, data, setData }) {
   const [error, setError] = useState("");
+  
   const [toast, setToast] = useState(null);
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
@@ -159,7 +149,7 @@ export default function DataEditor({ format, data, setData }) {
         <div className="flex h-full">
           <div 
             ref={lineNumbersRef}
-            className="bg-gray-900 text-gray-400 font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
+            className="bg-gray-900 text-white font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
             style={{ 
               borderRight: '1px solid #374151',
               height: '600px'

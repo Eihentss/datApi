@@ -66,7 +66,6 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister']);
 Route::post('/register', [AuthController::class, 'register']);
 
-// Catch-all route priekš dinamiskajiem API
 Route::any('/{slug}', function($slug, Request $request) {
     $resource = ApiResource::where('route', '/' . $slug)->first();
 
@@ -75,18 +74,15 @@ Route::any('/{slug}', function($slug, Request $request) {
     }
 
         if ($resource->visibility === 'private') {
-        // Ja lietotājs nav autentificēts vai nav īpašnieks
         if (!Auth::check() || Auth::id() !== $resource->user_id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
     }
 
-    // Pārbauda vai GET ir atļauts
     if ($request->method() === 'GET' && !$resource->allow_get) {
         return response()->json(['message' => 'GET not allowed'], 403);
     }
 
-    // Formāti
     $schema = $resource->schema ?? [];
 
     switch ($resource->format) {

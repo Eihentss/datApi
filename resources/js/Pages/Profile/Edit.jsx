@@ -1,39 +1,49 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
+import Navbar from "@/Components/Navbar";
+
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
-export default function Edit({ mustVerifyEmail, status }) {
+export default function Edit({ resource, mustVerifyEmail, status }) {
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                    Profile
-                </h2>
-            }
-        >
-            <Head title="Profile" />
+        <div className="min-h-screen bg-gray-50 text-black">
+            <Head title="Rediģēt API" />
+            
+            <Navbar />
 
-            <div className="py-12">
+            <div className="pt-24 max-w mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-bold leading-tight text-black">
+                            Rediģēt profilu
+                        </h2>
+                    </div>
+
+                    <div className="bg-white border border-black p-4 shadow-lg sm:rounded-lg sm:p-8">
                         <UpdateProfileInformationForm
-                            mustVerifyEmail={mustVerifyEmail}
+                            resource={resource}
                             status={status}
                             className="max-w-xl"
                         />
                     </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                        <UpdatePasswordForm className="max-w-xl" />
+                    <div className="bg-white border border-black p-4 shadow-lg sm:rounded-lg sm:p-8">
+                        <UpdatePasswordForm 
+                            resource={resource}
+                            className="max-w-xl" 
+                        />
                     </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-                        <DeleteUserForm className="max-w-xl" />
+                    <div className="bg-white border border-black p-4 shadow-lg sm:rounded-lg sm:p-8">
+                        <DeleteUserForm 
+                            resource={resource}
+                            className="max-w-xl" 
+                        />
                     </div>
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </div>
     );
 }
