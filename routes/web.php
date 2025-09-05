@@ -73,11 +73,8 @@ Route::post('/register', [AuthController::class, 'register']);
 
 
 
-
-Route::any('/{slug}', [DynamicApiController::class, 'handle'])
-    ->where('slug', '^(?!login|register|api|Create|docs).*$');
-
-
+Route::match(['GET', 'POST', 'PUT', 'DELETE'], '/{slug}', [DynamicApiController::class, 'handle'])
+    ->where('slug', '[a-zA-Z0-9_-]+');
 
 // Route::any('/{slug}', function($slug, Request $request) {
 //     $resource = ApiResource::where('route', '/' . $slug)->first();
