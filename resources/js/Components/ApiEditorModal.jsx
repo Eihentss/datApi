@@ -37,10 +37,51 @@ export default function ApiEditorModal({ show, onClose, onSave, initialData }) {
         }));
     };
 
-    const handleSubmit = () => {
-        onSave(formData);
-        onClose();
+
+    const handleSubmit = async () => {
+        try {
+            const url = initialData?.id
+            ? `/api-resources/${initialData.id}`
+            : "/api-resources";
+        
+        const method = initialData?.id ? "PUT" : "POST";
+    
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        ?.getAttribute("content"),
+                },
+                body: JSON.stringify(formData),
+            });
+    
+            let data;
+            try {
+                data = await response.json();
+            } catch {
+                throw new Error("Serveris neatgrieza JSON atbildi");
+            }
+    
+            if (!response.ok) {
+                alert(data.message || "Kļūda saglabājot API");
+                return;
+            }
+    
+            if (data.resource) {
+                onSave(data.resource); // 🔥 tagad būs pilns resurss
+            }
+    
+            onClose();
+        } catch (err) {
+            console.error("Saglabāšanas kļūda:", err);
+            alert("Neizdevās saglabāt API");
+        }
     };
+    
+    
+    
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
@@ -113,6 +154,16 @@ export default function ApiEditorModal({ show, onClose, onSave, initialData }) {
                             DELETE
                         </label>
                     </div>
+                </div>
+
+                {/* Papildu iestatījumi */}
+                <div className="mt-6">
+                    <button
+                        className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 text-sm sm:text-base"
+                        onClick={() => alert("Papildu iestatījumi vēl nav pieejami")}
+                    >
+                        Papildu iestatījumi
+                    </button>
                 </div>
 
                 {/* Pogas */}

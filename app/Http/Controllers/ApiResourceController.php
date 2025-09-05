@@ -91,6 +91,56 @@ class ApiResourceController extends Controller
         ]);
     }
 
+    public function update(Request $request, ApiResource $apiResource)
+    {
+        $request->validate([
+            'route' => 'required|string|max:255',
+            'format' => 'required|in:json,xml,csv',
+        ]);
+    
+        $route = $request->input('route');
+    
+        if (str_starts_with($route, '/api')) {
+            return response()->json([
+                'message' => "Route nevar sākties ar '/api'!"
+            ], 422);
+        }
+    
+        $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
+        if (in_array(ltrim($route, '/'), $existingRoutes) && $route !== $apiResource->route) {
+            return response()->json([
+                'message' => 'Šāds route jau eksistē sistēmā!'
+            ], 422);
+        }
+    
+        if (
+            \App\Models\ApiResource::where('route', $route)
+                ->where('id', '!=', $apiResource->id)
+                ->exists()
+        ) {
+            return response()->json([
+                'message' => 'Šāds route jau eksistē datubāzē!'
+            ], 422);
+        }
+    
+        $apiResource->update([
+            'route' => $route,
+            'format' => $request->input('format'),
+            'visibility' => $request->input('visibility'),
+            'allow_get' => $request->boolean('allow_get'),
+            'allow_post' => $request->boolean('allow_post'),
+            'allow_put' => $request->boolean('allow_put'),
+            'allow_delete' => $request->boolean('allow_delete')
+        ]);
+    
+        return response()->json([
+            'message' => 'API atjaunots!',
+            'resource' => $apiResource,
+        ]);
+    }
+    
+
+
 
 
 

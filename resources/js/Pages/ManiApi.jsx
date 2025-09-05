@@ -5,8 +5,10 @@ import { useState } from "react";
 import ApiEditorModal from "@/Components/ApiEditorModal";
 
 export default function ManiApi() {
-    const { resources } = usePage().props;
+    const {resources: initialResources } = usePage().props;
+    const [resources, setResources] = useState(initialResources || []);
     const [search, setSearch] = useState("");
+
     const [currentPage, setCurrentPage] = useState(1);
     const [showEditor, setShowEditor] = useState(false);
     const [selectedResource, setSelectedResource] = useState(null); // 👈 te glabājam izvēlēto
@@ -174,11 +176,26 @@ export default function ManiApi() {
             {/* Editor modālis */}
             {showEditor && selectedResource && (
                 <ApiEditorModal
-                    show={showEditor}
-                    onClose={() => setShowEditor(false)}
-                    onSave={handleSave}
-                    initialData={selectedResource} // 👈 tagad padodam reālo resursu
-                />
+    show={showEditor}
+    onClose={() => setShowEditor(false)}
+    initialData={selectedResource}
+    onSave={(updatedResource) => {
+        setResources((prev) => {
+            if (!updatedResource) return prev;
+
+            if (updatedResource.id) {
+                // update
+                return prev.map((r) =>
+                    r.id === updatedResource.id ? updatedResource : r
+                );
+            }
+            // add
+            return [...prev, updatedResource];
+        });
+    }}
+/>
+
+
             )}
         </>
     );

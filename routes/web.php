@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\ApiResource;
 use Laravel\Socialite\Facades\Socialite;
+use App\Http\Controllers\DynamicApiController;
+
+
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -52,6 +56,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/api-resources', [ApiResourceController::class, 'store'])->name('api-resources.store');
 });
 
+Route::put('/api-resources/{apiResource}', [ApiResourceController::class, 'update']);
 
 
 Route::get('/public-apis', [ApiResourceController::class, 'publicApis'])->name('public-apis');
@@ -66,54 +71,92 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister']);
 Route::post('/register', [AuthController::class, 'register']);
 
-Route::any('/{slug}', function($slug, Request $request) {
-    $resource = ApiResource::where('route', '/' . $slug)->first();
 
-    if (!$resource) {
-        abort(404, 'API not found');    
-    }
 
-        if ($resource->visibility === 'private') {
-        if (!Auth::check() || Auth::id() !== $resource->user_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-    }
 
-    if ($request->method() === 'GET' && !$resource->allow_get) {
-        return response()->json(['message' => 'GET not allowed'], 403);
-    }
+Route::any('/{slug}', [DynamicApiController::class, 'handle'])
+    ->where('slug', '^(?!login|register|api|Create|docs).*$');
 
-    $schema = $resource->schema ?? [];
 
-    switch ($resource->format) {
-        case 'json':
-            return response()->json($schema);
-        case 'xml':
-            $xml = new \SimpleXMLElement('<root/>');
-            array_to_xml($schema, $xml);
-            return response($xml->asXML(), 200)->header('Content-Type', 'application/xml');
-        case 'yaml':
-            return response(\Symfony\Component\Yaml\Yaml::dump($schema), 200)
-                ->header('Content-Type', 'text/yaml');
-        default:
-            return response()->json($schema);
-    }
-})->where('slug', '^(?!login|register|api|Create|docs).*$');
 
-if (!function_exists('array_to_xml')) {
-    function array_to_xml(array $data, \SimpleXMLElement &$xml) {
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                if (is_numeric($key)) $key = "item$key";
-                $subnode = $xml->addChild($key);
-                array_to_xml($value, $subnode);
-            } else {
-                if (is_numeric($key)) $key = "item$key";
-                $xml->addChild($key, htmlspecialchars($value));
-            }
-        }
-    }
-}
+// Route::any('/{slug}', function($slug, Request $request) {
+//     $resource = ApiResource::where('route', '/' . $slug)->first();
+
+//     if (!$resource) {
+//         abort(404, 'API not found');    
+//     }
+
+//         if ($resource->visibility === 'private') {
+//         if (!Auth::check() || Auth::id() !== $resource->user_id) {
+//             return response()->json(['message' => 'Unauthorized'], 403);
+//         }
+//     }
+
+//     $method = $request->method();
+
+//     if ($method === 'GET' && !$resource->allow_get) {
+//         return response()->json(['message' => 'GET not allowed'], 403);
+//     }
+
+//     if ($method === 'POST' && !$resource->allow_post) {
+//         return response()->json(['message' => 'POST not allowed'], 403);
+//     }
+
+//     if ($method === 'PUT' && !$resource->allow_put) {
+//         return response()->json(['message' => 'PUT not allowed'], 403);
+//     }
+
+//     if ($method === 'DELETE' && !$resource->allow_delete) {
+//         return response()->json(['message' => 'DELETE not allowed'], 403);
+//     }
+
+//     // --- pagaidām tikai testēšanai ---
+//     switch ($method) {
+//         case 'GET':
+//             $schema = $resource->schema ?? [];
+//             return response()->json($schema);
+
+//         case 'POST':
+//             return response()->json(['message' => 'POST OK', 'data' => $request->all()]);
+
+//         case 'PUT':
+//             return response()->json(['message' => 'PUT OK', 'data' => $request->all()]);
+
+//         case 'DELETE':
+//             return response()->json(['message' => 'DELETE OK']);
+//     }
+
+//     $schema = $resource->schema ?? [];
+
+//     switch ($resource->format) {
+//         case 'json':
+//             return response()->json($schema);
+//         case 'xml':
+//             $xml = new \SimpleXMLElement('<root/>');
+//             array_to_xml($schema, $xml);
+//             return response($xml->asXML(), 200)->header('Content-Type', 'application/xml');
+//         case 'yaml':
+//             return response(\Symfony\Component\Yaml\Yaml::dump($schema), 200)
+//                 ->header('Content-Type', 'text/yaml');
+//         default:
+//             return response()->json($schema);
+//     }
+// })->where('slug', '^(?!login|register|api|Create|docs).*$');
+
+// if (!function_exists('array_to_xml')) {
+//     function array_to_xml(array $data, \SimpleXMLElement &$xml) {
+//         foreach ($data as $key => $value) {
+//             if (is_array($value)) {
+//                 if (is_numeric($key)) $key = "item$key";
+//                 $subnode = $xml->addChild($key);
+//                 array_to_xml($value, $subnode);
+//             } else {
+//                 if (is_numeric($key)) $key = "item$key";
+//                 $xml->addChild($key, htmlspecialchars($value));
+//             }
+//         }
+//     }
+// }
 
 
 
