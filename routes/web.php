@@ -11,6 +11,7 @@ use App\Models\ApiResource;
 use Laravel\Socialite\Facades\Socialite;
 use App\Http\Controllers\DynamicApiController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Middleware\VerifyCsrfToken;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -65,9 +66,9 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister']);
 Route::post('/register', [AuthController::class, 'register']);
 
-// API maršruts BEZ web middleware (BEZ CSRF!)
-// Route::match(['GET', 'POST', 'PUT', 'DELETE'], '{slug}', [DynamicApiController::class, 'handle'])
-//     ->where('slug', '[a-zA-Z0-9_-]+')
-//     ->middleware([]);
+
+Route::any('{slug}', [DynamicApiController::class, 'handle'])
+    ->where('slug', '[a-zA-Z0-9_-]+')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 require __DIR__.'/auth.php';

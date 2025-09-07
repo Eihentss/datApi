@@ -14,7 +14,6 @@ class DynamicApiController extends Controller
             return response()->json(['message' => 'API not found'], 404);
         }
 
-        // Private API pārbaude
         if ($resource->visibility === 'private') {
             if (!Auth::check() || Auth::id() !== $resource->user_id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
@@ -23,29 +22,24 @@ class DynamicApiController extends Controller
 
         $method = $request->method();
         
-        // Metodes atļauju pārbaude
         if ($method === 'GET' && !$resource->allow_get) return response()->json(['message' => 'GET not allowed'], 403);
         if ($method === 'POST' && !$resource->allow_post) return response()->json(['message' => 'POST not allowed'], 403);
         if ($method === 'PUT' && !$resource->allow_put) return response()->json(['message' => 'PUT not allowed'], 403);
         if ($method === 'DELETE' && !$resource->allow_delete) return response()->json(['message' => 'DELETE not allowed'], 403);
 
-        // --- manipulācija ar datiem ---
         $schema = $resource->schema ?? [];
         
         switch ($method) {
             case 'GET':
-                // tikai atgriež esošo schema
                 return $this->formatResponse($resource->format, $schema);
                 
             case 'POST':
-                // pievieno jaunus laukus schema
                 $newData = $request->all();
                 $resource->schema = array_merge($schema, $newData);
                 $resource->save();
                 return $this->formatResponse($resource->format, $resource->schema, 'POST successful. Data added.');
                 
             case 'DELETE':
-                // izdzēš visu schema
                 $resource->schema = [];
                 $resource->save();
                 return response()->json([
@@ -54,14 +48,12 @@ class DynamicApiController extends Controller
                 ]);
                 
             case 'PUT':
-                // Atjaunina visu schema
                 $newData = $request->all();
                 $resource->schema = $newData;
                 $resource->save();
                 return $this->formatResponse($resource->format, $resource->schema, 'PUT successful. Data replaced.');
         }
         
-        // fallback GET
         return $this->formatResponse($resource->format, $schema);
     }
     

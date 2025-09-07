@@ -237,7 +237,6 @@
                 }
             }
             
-            // Konfigurācija pieprasījumam
             const requestOptions = {
                 method: method,
                 headers: {

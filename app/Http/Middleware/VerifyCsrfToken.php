@@ -18,6 +18,6 @@ class VerifyCsrfToken extends Middleware
         // Vai arī visus slug maršrutus (uzmanīgi ar šo!)
         '*',
         // Specifiski jebkurš vienreizīgs slug
-        // '[a-zA-Z0-9_-]+',
+        '[a-zA-Z0-9_-]+',
     ];
 }
