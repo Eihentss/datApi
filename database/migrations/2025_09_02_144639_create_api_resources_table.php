@@ -19,7 +19,8 @@ return new class extends Migration {
             $table->boolean('allow_post')->default(false);
             $table->boolean('allow_put')->default(false);
             $table->boolean('allow_delete')->default(false);
-
+            
+            $table->string('password')->nullable(); // parole tikai privātam API
             $table->json('schema')->nullable(); // JSON struktūra
 
             $table->timestamps();

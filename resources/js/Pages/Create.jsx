@@ -1,6 +1,8 @@
 import { Head, usePage } from "@inertiajs/react";
 import { useState } from "react";
-import { Code2 } from "lucide-react";
+import { Lock, Unlock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
 import Toast from "@/Components/Toast";
 import axios from "axios";
 import JsonEditor from "@/Components/JsonEditor";
@@ -14,6 +16,7 @@ export default function Create() {
     const [format, setFormat] = useState("json");
     const [methods, setMethods] = useState(["GET"]);
     const [data, setData] = useState('{\n  "example": "value"\n}');
+    const [password, setPassword] = useState("");
 
     const handleRouteChange = (e) => {
         const value = e.target.value;
@@ -55,6 +58,10 @@ export default function Create() {
             });
             return;
         }
+        if (isPrivate && !password) {
+            setToast({ message: "Privātam API nepieciešama parole!", type: "error" });
+            return;
+        }
 
         let schemaObj;
         try {
@@ -67,6 +74,7 @@ export default function Create() {
         const payload = {
             route,
             visibility: isPrivate ? "private" : "public",
+            password: isPrivate ? password : null,
             format,
             allow_get: methods.includes("GET"),
             allow_post: methods.includes("POST"),
@@ -81,6 +89,7 @@ export default function Create() {
                 setToast({ message: "API saglabāts!", type: "success" });
                 setRoute("");
                 setIsPrivate(false);
+                setPassword("");
                 setFormat("json");
                 setMethods(["GET"]);
                 setData('{\n  "example": "value"\n}');
@@ -145,6 +154,28 @@ export default function Create() {
                                     Privāts API
                                 </label>
                             </div>
+                              {/* PASSWORD FIELD */}
+                              <AnimatePresence>
+                                {isPrivate && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="space-y-1"
+                                    >
+                                        <label className="block text-sm font-semibold">
+                                            Parole
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Ievadi API paroli"
+                                            className="w-full border rounded-xl px-3 py-2 shadow-sm border-gray-300 focus:ring-2 focus:ring-black transition"
+                                        />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             <div>
                                 <label className="block text-sm font-medium mb-1">
@@ -162,33 +193,58 @@ export default function Create() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">
-                                    Atļautās metodes
-                                </label>
-                                <div className="flex gap-4 flex-wrap">
-                                    {["GET", "POST", "PUT", "DELETE"].map(
-                                        (method) => (
-                                            <label
-                                                key={method}
-                                                className="flex items-center gap-2"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={methods.includes(
-                                                        method
-                                                    )}
-                                                    onChange={() =>
-                                                        handleMethodChange(
-                                                            method
-                                                        )
-                                                    }
-                                                />
-                                                {method}
-                                            </label>
-                                        )
-                                    )}
-                                </div>
-                            </div>
+                                        <label className="block text-sm font-medium mb-3">
+                                            Atļautās metodes
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {["GET", "POST", "PUT", "DELETE"].map(
+                                                (method) => (
+                                                    <label
+                                                        key={method}
+                                                        className="relative cursor-pointer group"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={methods.includes(method)}
+                                                            onChange={() => handleMethodChange(method)}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className={`
+                                                            flex items-center justify-center
+                                                            h-12 px-4 rounded-xl border-2 
+                                                            font-semibold text-sm
+                                                            transition-all duration-200
+                                                            ${methods.includes(method)
+                                                                ? 'bg-green-50 border-green-500 text-green-700 shadow-md shadow-green-100'
+                                                                : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                                                            }
+                                                        `}>
+                                                            <div className="flex items-center gap-2">
+                                                                {methods.includes(method) && (
+                                                                    <svg 
+                                                                        className="w-4 h-4 text-green-600" 
+                                                                        fill="none" 
+                                                                        stroke="currentColor" 
+                                                                        viewBox="0 0 24 24"
+                                                                    >
+                                                                        <path 
+                                                                            strokeLinecap="round" 
+                                                                            strokeLinejoin="round" 
+                                                                            strokeWidth={2.5} 
+                                                                            d="M5 13l4 4L19 7" 
+                                                                        />
+                                                                    </svg>
+                                                                )}
+                                                                <span className={methods.includes(method) ? 'text-green-700' : 'text-gray-600'}>
+                                                                    {method}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                )
+                                            )}
+                                        </div>
+                                    </div>
 
                             <button
                                 type="submit"

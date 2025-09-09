@@ -23,6 +23,7 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
+        "framer-motion": "^12.23.12",
         "jsonrepair": "^3.13.0",
         "lucide-react": "^0.542.0"
     }

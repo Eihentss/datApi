@@ -2,9 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { jsonrepair } from "jsonrepair";
 import Toast from "@/Components/Toast";
 
-
-
-
 export default function DataEditor({ format, data, setData }) {
   const [error, setError] = useState("");
   
@@ -149,9 +146,9 @@ export default function DataEditor({ format, data, setData }) {
         <div className="flex h-full">
           <div 
             ref={lineNumbersRef}
-            className="bg-gray-900 text-white font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
+            className="bg-black text-white font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
             style={{ 
-              borderRight: '1px solid #374151',
+              borderRight: '1px solid rgb(0, 0, 0)',
               height: '600px'
             }}
           >
@@ -170,8 +167,15 @@ export default function DataEditor({ format, data, setData }) {
             onChange={(e) => setData(e.target.value)}
             onKeyDown={handleKeyDown}
             onScroll={handleScroll}
-            className="flex-1 h-full resize-none p-3 font-mono text-sm leading-6 bg-black text-white focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-y-auto"
-            style={{ height: "600px" }}
+            spellCheck={false}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            className="flex-1 h-full resize-none p-3 font-mono text-sm leading-6 bg-black text-white focus:outline-none focus:ring-2 focus:ring-black overflow-y-auto"
+            style={{ 
+              height: "600px",
+              WebkitTextSizeAdjust: "100%"
+            }}
             placeholder="Ievadiet savu datu..."
           />
         </div>

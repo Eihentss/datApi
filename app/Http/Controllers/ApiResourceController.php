@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ApiResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class ApiResourceController extends Controller
@@ -21,31 +22,33 @@ class ApiResourceController extends Controller
     {
         $request->validate([
             'route' => 'required|string|max:255',
-            'format' => 'required|in:json,xml,csv',
+            'format' => 'required|in:json,xml,yaml',
+            'visibility' => 'required|in:public,private',
+            'password' => 'nullable|string|min:4', // tikai ja private
         ]);
-    
+
         $route = $request->input('route');
-    
+
         if (str_starts_with($route, '/api')) {
             return response()->json([
                 'message' => "Route nevar sākties ar '/api'!"
             ], 422);
         }
-    
+
         $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
         if (in_array(ltrim($route, '/'), $existingRoutes)) {
             return response()->json([
                 'message' => 'Šāds route jau eksistē sistēmā!'
             ], 422);
         }
-    
-        if (\App\Models\ApiResource::where('route', $route)->exists()) {
+
+        if (ApiResource::where('route', $route)->exists()) {
             return response()->json([
                 'message' => 'Šāds route jau eksistē datubāzē!'
             ], 422);
         }
-    
-        $resource = new \App\Models\ApiResource();
+
+        $resource = new ApiResource();
         $resource->user_id = $request->user()->id;
         $resource->route = $route;
         $resource->format = $request->input('format');
@@ -55,12 +58,23 @@ class ApiResourceController extends Controller
         $resource->allow_put = $request->boolean('allow_put');
         $resource->allow_delete = $request->boolean('allow_delete');
         $resource->schema = $request->input('schema');
+
+        // Parole tikai privātam API
+        if ($resource->visibility === 'private') {
+            if (!$request->filled('password')) {
+                return response()->json([
+                    'message' => 'Privātam API nepieciešama parole!'
+                ], 422);
+            }
+            $resource->password = Hash::make($request->input('password'));
+        }
+
         $resource->save();
-    
+
         return response()->json(['message' => 'API saglabāts!']);
     }
 
-     public function publicApis()
+    public function publicApis()
     {
         $resources = ApiResource::where('visibility', 'public')->get();
 
@@ -95,26 +109,28 @@ class ApiResourceController extends Controller
     {
         $request->validate([
             'route' => 'required|string|max:255',
-            'format' => 'required|in:json,xml,csv',
+            'format' => 'required|in:json,xml,yaml',
+            'visibility' => 'required|in:public,private',
+            'password' => 'nullable|string|min:4',
         ]);
-    
+
         $route = $request->input('route');
-    
+
         if (str_starts_with($route, '/api')) {
             return response()->json([
                 'message' => "Route nevar sākties ar '/api'!"
             ], 422);
         }
-    
+
         $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
         if (in_array(ltrim($route, '/'), $existingRoutes) && $route !== $apiResource->route) {
             return response()->json([
                 'message' => 'Šāds route jau eksistē sistēmā!'
             ], 422);
         }
-    
+
         if (
-            \App\Models\ApiResource::where('route', $route)
+            ApiResource::where('route', $route)
                 ->where('id', '!=', $apiResource->id)
                 ->exists()
         ) {
@@ -122,26 +138,25 @@ class ApiResourceController extends Controller
                 'message' => 'Šāds route jau eksistē datubāzē!'
             ], 422);
         }
-    
-        $apiResource->update([
-            'route' => $route,
-            'format' => $request->input('format'),
-            'visibility' => $request->input('visibility'),
-            'allow_get' => $request->boolean('allow_get'),
-            'allow_post' => $request->boolean('allow_post'),
-            'allow_put' => $request->boolean('allow_put'),
-            'allow_delete' => $request->boolean('allow_delete')
-        ]);
-    
+
+        $apiResource->route = $route;
+        $apiResource->format = $request->input('format');
+        $apiResource->visibility = $request->input('visibility');
+        $apiResource->allow_get = $request->boolean('allow_get');
+        $apiResource->allow_post = $request->boolean('allow_post');
+        $apiResource->allow_put = $request->boolean('allow_put');
+        $apiResource->allow_delete = $request->boolean('allow_delete');
+        $apiResource->schema = $request->input('schema');
+
+        if ($apiResource->visibility === 'private' && $request->filled('password')) {
+            $apiResource->password = Hash::make($request->input('password'));
+        }
+
+        $apiResource->save();
+
         return response()->json([
             'message' => 'API atjaunots!',
             'resource' => $apiResource,
         ]);
     }
-    
-
-
-
-
-
 }

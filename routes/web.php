@@ -70,5 +70,5 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::any('{slug}', [DynamicApiController::class, 'handle'])
     ->where('slug', '[a-zA-Z0-9_-]+')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
-
+ 
 require __DIR__.'/auth.php';

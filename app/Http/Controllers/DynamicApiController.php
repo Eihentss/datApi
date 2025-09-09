@@ -1,9 +1,10 @@
 <?php
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use App\Models\ApiResource;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 
 class DynamicApiController extends Controller
 {
@@ -15,30 +16,45 @@ class DynamicApiController extends Controller
         }
 
         if ($resource->visibility === 'private') {
-            if (!Auth::check() || Auth::id() !== $resource->user_id) {
-                return response()->json(['message' => 'Unauthorized'], 403);
+            // Ja lietotājs ir autentificēts un šis API ir viņa, ļauj
+            if (auth()->check() && auth()->id() === $resource->user_id) {
+                // Do nothing, piekļuve atļauta
+            } else {
+                // citādi pārbauda password
+                $password = $request->input('password') ?? $request->header('X-API-PASSWORD');
+                if (!$password || !Hash::check($password, $resource->password)) {
+                    return response()->json(['message' => 'Unauthorized: incorrect password'], 403);
+                }
             }
         }
 
         $method = $request->method();
-        
+
+        $cacheKey = "api_rate_limit:{$resource->id}:{$method}:" . $request->ip();
+        if (!Cache::add($cacheKey, true, 3)) {
+            return response()->json([
+                'message' => 'Too Many Requests: wait before trying again'
+            ], 429);
+        }
+
         if ($method === 'GET' && !$resource->allow_get) return response()->json(['message' => 'GET not allowed'], 403);
         if ($method === 'POST' && !$resource->allow_post) return response()->json(['message' => 'POST not allowed'], 403);
         if ($method === 'PUT' && !$resource->allow_put) return response()->json(['message' => 'PUT not allowed'], 403);
         if ($method === 'DELETE' && !$resource->allow_delete) return response()->json(['message' => 'DELETE not allowed'], 403);
 
         $schema = $resource->schema ?? [];
-        
+
         switch ($method) {
             case 'GET':
                 return $this->formatResponse($resource->format, $schema);
-                
+
             case 'POST':
                 $newData = $request->all();
-                $resource->schema = array_merge($schema, $newData);
+                unset($newData['password']);
+                $resource->schema = array_merge((array) $schema, $newData);
                 $resource->save();
                 return $this->formatResponse($resource->format, $resource->schema, 'POST successful. Data added.');
-                
+
             case 'DELETE':
                 $resource->schema = [];
                 $resource->save();
@@ -46,17 +62,18 @@ class DynamicApiController extends Controller
                     'message' => "All data deleted successfully",
                     'data' => $resource->schema
                 ]);
-                
+
             case 'PUT':
                 $newData = $request->all();
+                unset($newData['password']);
                 $resource->schema = $newData;
                 $resource->save();
                 return $this->formatResponse($resource->format, $resource->schema, 'PUT successful. Data replaced.');
         }
-        
+
         return $this->formatResponse($resource->format, $schema);
     }
-    
+
     private function formatResponse($format, $data, $message = null)
     {
         switch ($format) {
@@ -64,16 +81,16 @@ class DynamicApiController extends Controller
                 return response()->json($message ? ['message' => $message, 'data' => $data] : $data);
             case 'xml':
                 $xml = new \SimpleXMLElement('<root/>');
-                $this->arrayToXml($data, $xml);
+                $this->arrayToXml((array) $data, $xml);
                 return response($xml->asXML(), 200)->header('Content-Type', 'application/xml');
             case 'yaml':
-                return response(\Symfony\Component\Yaml\Yaml::dump($data), 200)
+                return response(\Symfony\Component\Yaml\Yaml::dump((array) $data), 200)
                     ->header('Content-Type', 'text/yaml');
             default:
                 return response()->json($data);
         }
     }
-    
+
     private function arrayToXml(array $data, \SimpleXMLElement &$xml)
     {
         foreach ($data as $key => $value) {

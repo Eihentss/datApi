@@ -134,7 +134,10 @@
     <h1>API Testa Panelis</h1>
     
     <div class="input-section">
-        <input type="text" class="url-input" id="apiEndpoint" value="http://localhost:8000/tests" placeholder="Ievadiet API URL">
+        <input type="text" class="url-input" id="apiEndpoint" value="http://localhost:8000/parole" placeholder="Ievadiet API URL">
+        
+        <!-- Paroles ievades lauks -->
+        <input type="password" class="url-input" id="apiPassword" placeholder="Ievadiet paroli (ja nepieciešama)">
         
         <textarea class="data-input" id="requestData" placeholder='Ievadiet datus JSON formātā (POST/PUT metodēm):
 {
@@ -174,30 +177,32 @@
         }
         
         function setQuickData(type) {
-            const dataInput = document.getElementById("requestData");
-            const quickData = {
-                user: {
-                    "name": "Jānis Bērziņš",
-                    "email": "janis@example.com",
-                    "age": 28,
-                    "city": "Rīga"
-                },
-                product: {
-                    "name": "Laptop",
-                    "price": 899.99,
-                    "category": "Electronics",
-                    "inStock": true
-                },
-                task: {
-                    "title": "Pabeigt projektu",
-                    "description": "Laravel API izstrāde",
-                    "priority": "high",
-                    "completed": false
-                }
-            };
-            
-            dataInput.value = JSON.stringify(quickData[type], null, 2);
+    const dataInput = document.getElementById("requestData");
+    const quickData = {
+        user: {
+            "name": "Jānis Bērziņš",
+            "email": "janis@example.com",
+            "age": 28,
+            "city": "Rīga"
+        },
+        product: {
+            "name": "Laptop",
+            "price": 899.99,
+            "category": "Electronics",
+            "inStock": true
+        },
+        task: {
+            "title": "Pabeigt projektu",
+            "description": "Laravel API izstrāde",
+            "priority": "high",
+            "completed": false
         }
+    };
+
+    // saglabā datus kā masīvu ar vienu elementu
+    dataInput.value = JSON.stringify([quickData[type]], null, 2);
+}
+
         
         function clearData() {
             document.getElementById("requestData").value = "";
@@ -213,6 +218,7 @@
         async function testMethod(method) {
             const apiUrl = document.getElementById("apiEndpoint").value.trim();
             const requestDataText = document.getElementById("requestData").value.trim();
+            const apiPassword = document.getElementById("apiPassword").value.trim();
             
             if (!apiUrl) {
                 setStatus('Kļūda: Nav norādīts API URL!', 'error');
@@ -245,6 +251,11 @@
                 },
             };
             
+            // Pievieno paroli headerī, ja ir ievadīta
+            if (apiPassword) {
+                requestOptions.headers['X-API-PASSWORD'] = apiPassword;
+            }
+            
             // Pievienot datus, ja nepieciešams
             if (requestData && (method === 'POST' || method === 'PUT')) {
                 requestOptions.body = JSON.stringify(requestData);
@@ -265,7 +276,6 @@
                     responseData = await response.text();
                 }
                 
-                // Formatēt rezultātu
                 const result = {
                     method: method,
                     url: apiUrl,
@@ -292,10 +302,10 @@
             }
         }
         
-        // Sākotnējais GET tests
         window.addEventListener('load', () => {
             output.textContent = 'Panelis gatavs darbam!\n\nIeteikumi:\n1. Pārbaudiet, vai Laravel serveris darbojas\n2. Sāciet ar GET metodi\n3. Izmantojiet POST, lai pievienotu datus\n4. DELETE, lai izdzēstu visus datus';
         });
     </script>
 </body>
+
 </html>
