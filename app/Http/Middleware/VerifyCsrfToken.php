@@ -13,8 +13,8 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         // Izslēgt visus API maršrutus no CSRF pārbaudes
-        'tests',
-        'tests/*',
+        // 'tests',
+        // 'tests/*',
         // Vai arī visus slug maršrutus (uzmanīgi ar šo!)
         '*',
         // Specifiski jebkurš vienreizīgs slug

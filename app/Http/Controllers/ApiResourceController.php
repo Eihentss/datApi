@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\ApiResource;
@@ -12,7 +11,6 @@ class ApiResourceController extends Controller
     public function index()
     {
         $resources = ApiResource::where('user_id', auth()->id())->get();
-
         return Inertia::render('Create', [
             'resources' => $resources,
         ]);
@@ -24,7 +22,7 @@ class ApiResourceController extends Controller
             'route' => 'required|string|max:255',
             'format' => 'required|in:json,xml,yaml',
             'visibility' => 'required|in:public,private',
-            'password' => 'nullable|string|min:4', // tikai ja private
+            'password' => 'nullable|string|min:4',
         ]);
 
         $route = $request->input('route');
@@ -48,6 +46,11 @@ class ApiResourceController extends Controller
             ], 422);
         }
 
+        $schema = $request->input('schema');
+        if (is_string($schema)) {
+            $schema = json_decode($schema, true);
+        }
+
         $resource = new ApiResource();
         $resource->user_id = $request->user()->id;
         $resource->route = $route;
@@ -57,9 +60,8 @@ class ApiResourceController extends Controller
         $resource->allow_post = $request->boolean('allow_post');
         $resource->allow_put = $request->boolean('allow_put');
         $resource->allow_delete = $request->boolean('allow_delete');
-        $resource->schema = $request->input('schema');
+        $resource->schema = $schema;
 
-        // Parole tikai privātam API
         if ($resource->visibility === 'private') {
             if (!$request->filled('password')) {
                 return response()->json([
@@ -71,42 +73,20 @@ class ApiResourceController extends Controller
 
         $resource->save();
 
-        return response()->json(['message' => 'API saglabāts!']);
-    }
-
-    public function publicApis()
-    {
-        $resources = ApiResource::where('visibility', 'public')->get();
-
-        return Inertia::render('PublicApis', [
-            'resources' => $resources,
-        ]);
-    }
-
-    public function userApis(Request $request)
-    {
-        $userId = $request->user()->id;
-
-        $resources = ApiResource::where('user_id', $userId)
-            ->get([
-                'id',
-                'route',
-                'format',
-                'allow_get',
-                'allow_post',
-                'allow_put',
-                'allow_delete',
-                'visibility',
-                'created_at',
-            ]);
-
-        return Inertia::render('ManiApi', [
-            'resources' => $resources,
+        return response()->json([
+            'message' => 'API veiksmīgi izveidots!',
+            'resource' => $resource
         ]);
     }
 
     public function update(Request $request, ApiResource $apiResource)
     {
+        if ($apiResource->user_id !== $request->user()->id) {
+            return response()->json([
+                'message' => 'Nav atļaujas editēt šo API!'
+            ], 403);
+        }
+
         $request->validate([
             'route' => 'required|string|max:255',
             'format' => 'required|in:json,xml,yaml',
@@ -139,6 +119,11 @@ class ApiResourceController extends Controller
             ], 422);
         }
 
+        $schema = $request->input('schema');
+        if (is_string($schema)) {
+            $schema = json_decode($schema, true);
+        }
+
         $apiResource->route = $route;
         $apiResource->format = $request->input('format');
         $apiResource->visibility = $request->input('visibility');
@@ -146,7 +131,7 @@ class ApiResourceController extends Controller
         $apiResource->allow_post = $request->boolean('allow_post');
         $apiResource->allow_put = $request->boolean('allow_put');
         $apiResource->allow_delete = $request->boolean('allow_delete');
-        $apiResource->schema = $request->input('schema');
+        $apiResource->schema = $schema;
 
         if ($apiResource->visibility === 'private' && $request->filled('password')) {
             $apiResource->password = Hash::make($request->input('password'));
@@ -155,8 +140,90 @@ class ApiResourceController extends Controller
         $apiResource->save();
 
         return response()->json([
-            'message' => 'API atjaunots!',
+            'message' => 'API veiksmīgi atjaunots!',
             'resource' => $apiResource,
+        ]);
+    }
+
+    public function destroy(Request $request, ApiResource $apiResource)
+    {
+        if ($apiResource->user_id !== $request->user()->id) {
+            return response()->json([
+                'message' => 'Nav atļaujas dzēst šo API!'
+            ], 403);
+        }
+
+        try {
+            $apiResource->delete();
+
+            return response()->json([
+                'message' => 'API veiksmīgi dzēsts!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Kļūda dzēšot API: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function publicApis()
+    {
+        $resources = ApiResource::where('visibility', 'public')->get();
+        return Inertia::render('PublicApis', [
+            'resources' => $resources,
+        ]);
+    }
+
+    public function userApis(Request $request)
+    {
+        $userId = $request->user()->id;
+        $resources = ApiResource::where('user_id', $userId)
+            ->get([
+                'id',
+                'route',
+                'format',
+                'allow_get',
+                'allow_post',
+                'allow_put',
+                'allow_delete',
+                'visibility',
+                'created_at',
+                'schema',
+            ]);
+
+        return Inertia::render('ManiApi', [
+            'resources' => $resources,
+        ]);
+    }
+
+    public function editor(Request $request, ApiResource $apiResource)
+    {
+        if ($apiResource->user_id !== $request->user()->id) {
+            return redirect()->route('maniapi')->with('error', 'Nav atļaujas editēt šo API!');
+        }
+
+        return Inertia::render('ApiEditor', [
+            'resource' => $apiResource,
+        ]);
+    }
+
+    public function statistics(Request $request, ApiResource $apiResource)
+    {
+        if ($apiResource->user_id !== $request->user()->id) {
+            return redirect()->route('maniapi')->with('error', 'Nav atļaujas skatīt šā API statistiku!');
+        }
+
+        $stats = [
+            'total_requests' => 0,
+            'requests_today' => 0,
+            'requests_this_month' => 0,
+            'last_request' => null,
+            'most_used_method' => 'GET',
+        ];
+
+        return Inertia::render('ApiStatistics', [
+            'resource' => $apiResource,
+            'statistics' => $stats,
         ]);
     }
 }

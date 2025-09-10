@@ -29,46 +29,47 @@ Route::post('/logout', function () {
     return redirect('/');
 })->name('logout');
 
-Route::get('/Create', function () {
-    return Inertia::render('Create');
-})->middleware(['auth', 'verified'])->name('Create');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-Route::prefix('auth')->name('auth.')->group(function () {
-    Route::get('/google', [GoogleAuthController::class, 'redirect'])->name('google');
-    Route::get('/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
-});
-
+// Public routes
 Route::get('/docs', function () {
     return Inertia::render('Docx');
 })->name('docs');
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/Create', [ApiResourceController::class, 'index'])->name('Create');
-    Route::post('/api-resources', [ApiResourceController::class, 'store'])->name('api-resources.store');
-});
-
-Route::put('/api-resources/{apiResource}', [ApiResourceController::class, 'update']);
 Route::get('/public-apis', [ApiResourceController::class, 'publicApis'])->name('public-apis');
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/maniapi', [\App\Http\Controllers\ApiResourceController::class, 'userApis'])
-        ->name('maniapi');
-});
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/register', [AuthController::class, 'showRegister']);
 Route::post('/register', [AuthController::class, 'register']);
 
+Route::prefix('auth')->name('auth.')->group(function () {
+    Route::get('/google', [GoogleAuthController::class, 'redirect'])->name('google');
+    Route::get('/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('/Create', [ApiResourceController::class, 'index'])->name('Create');
+    Route::post('/api-resources', [ApiResourceController::class, 'store'])->name('api-resources.store');
+    Route::put('/api-resources/{apiResource}', [ApiResourceController::class, 'update'])->name('api-resources.update');
+    Route::delete('/api-resources/{apiResource}', [ApiResourceController::class, 'destroy'])->name('api-resources.destroy');
+
+    Route::get('/maniapi', [ApiResourceController::class, 'userApis'])->name('maniapi');
+
+    Route::get('/api-editor/{apiResource}', [ApiResourceController::class, 'editor'])
+        ->name('api-editor')
+        ->where('apiResource', '[0-9]+');
+    
+    Route::get('/api-statistics/{apiResource}', [ApiResourceController::class, 'statistics'])
+        ->name('api-statistics')
+        ->where('apiResource', '[0-9]+');
+
+});
 
 Route::any('{slug}', [DynamicApiController::class, 'handle'])
     ->where('slug', '[a-zA-Z0-9_-]+')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
- 
+
 require __DIR__.'/auth.php';

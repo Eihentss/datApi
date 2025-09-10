@@ -47,6 +47,11 @@ export default function ManiApi() {
         startIndex + itemsPerPage
     );
 
+    const handleDelete = (deletedId) => {
+        setResources((prev) => prev.filter((r) => r.id !== deletedId));
+    };
+
+
     const handleSave = (data) => {
         console.log("Saglabātie dati:", data);
     };
@@ -54,6 +59,8 @@ export default function ManiApi() {
     return (
         <>
             <Head title="Mani API" />
+            <div className="min-h-screen bg-gray-50 text-black">
+
             <Navbar />
 
             <div className="pt-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative">
@@ -173,30 +180,26 @@ export default function ManiApi() {
                 )}
             </div>
 
-            {/* Editor modālis */}
             {showEditor && selectedResource && (
                 <ApiEditorModal
-    show={showEditor}
-    onClose={() => setShowEditor(false)}
-    initialData={selectedResource}
-    onSave={(updatedResource) => {
-        setResources((prev) => {
-            if (!updatedResource) return prev;
-
-            if (updatedResource.id) {
-                // update
-                return prev.map((r) =>
-                    r.id === updatedResource.id ? updatedResource : r
-                );
-            }
-            // add
-            return [...prev, updatedResource];
-        });
-    }}
-/>
-
-
+                    show={showEditor}
+                    onClose={() => setShowEditor(false)}
+                    initialData={selectedResource}
+                    onDelete={handleDelete}
+                    onSave={(updatedResource) => {
+                        setResources((prev) => {
+                            if (!updatedResource) return prev;
+                            if (updatedResource.id) {
+                                return prev.map((r) =>
+                                    r.id === updatedResource.id ? updatedResource : r
+                                );
+                            }
+                            return [...prev, updatedResource];
+                        });
+                    }}
+                />
             )}
+        </div>
         </>
     );
 }

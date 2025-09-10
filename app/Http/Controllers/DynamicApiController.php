@@ -11,8 +11,15 @@ class DynamicApiController extends Controller
     public function handle(Request $request, $slug)
     {
         $resource = ApiResource::where('route', '/' . $slug)->first();
+        
         if (!$resource) {
-            return response()->json(['message' => 'API not found'], 404);
+            // Ja ir AJAX pieprasījums vai JSON pieprasījums, atgriezt JSON
+            if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+                return response()->json(['message' => 'API not found'], 404);
+            }
+            
+            // Citādi aizmest uz welcome page
+            return redirect('/')->with('error', 'API nav atrasts');
         }
 
         if ($resource->visibility === 'private') {
@@ -23,7 +30,13 @@ class DynamicApiController extends Controller
                 // citādi pārbauda password
                 $password = $request->input('password') ?? $request->header('X-API-PASSWORD');
                 if (!$password || !Hash::check($password, $resource->password)) {
-                    return response()->json(['message' => 'Unauthorized: incorrect password'], 403);
+                    // Pārbauda vai ir AJAX/JSON pieprasījums
+                    if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+                        return response()->json(['message' => 'Unauthorized: incorrect password'], 403);
+                    }
+                    
+                    // Citādi aizmest uz welcome page ar kļūdas ziņojumu
+                    return redirect('/')->with('error', 'Nav autorizācijas šim API');
                 }
             }
         }
@@ -32,15 +45,30 @@ class DynamicApiController extends Controller
 
         $cacheKey = "api_rate_limit:{$resource->id}:{$method}:" . $request->ip();
         if (!Cache::add($cacheKey, true, 3)) {
-            return response()->json([
-                'message' => 'Too Many Requests: wait before trying again'
-            ], 429);
+            if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Too Many Requests: wait before trying again'
+                ], 429);
+            }
+            
+            return redirect('/')->with('error', 'Pārāk daudz pieprasījumu. Lūdzu uzgaidiet.');
         }
 
-        if ($method === 'GET' && !$resource->allow_get) return response()->json(['message' => 'GET not allowed'], 403);
-        if ($method === 'POST' && !$resource->allow_post) return response()->json(['message' => 'POST not allowed'], 403);
-        if ($method === 'PUT' && !$resource->allow_put) return response()->json(['message' => 'PUT not allowed'], 403);
-        if ($method === 'DELETE' && !$resource->allow_delete) return response()->json(['message' => 'DELETE not allowed'], 403);
+        // Pārbauda HTTP metodes
+        $methodErrors = [
+            'GET' => !$resource->allow_get,
+            'POST' => !$resource->allow_post,
+            'PUT' => !$resource->allow_put,
+            'DELETE' => !$resource->allow_delete
+        ];
+
+        if (isset($methodErrors[$method]) && $methodErrors[$method]) {
+            if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
+                return response()->json(['message' => "$method not allowed"], 403);
+            }
+            
+            return redirect('/')->with('error', "HTTP $method metode nav atļauta šim API");
+        }
 
         $schema = $resource->schema ?? [];
 
@@ -58,10 +86,7 @@ class DynamicApiController extends Controller
             case 'DELETE':
                 $resource->schema = [];
                 $resource->save();
-                return response()->json([
-                    'message' => "All data deleted successfully",
-                    'data' => $resource->schema
-                ]);
+                return $this->formatResponse($resource->format, ['message' => 'All data deleted successfully', 'data' => $resource->schema]);
 
             case 'PUT':
                 $newData = $request->all();
@@ -100,7 +125,7 @@ class DynamicApiController extends Controller
                 $this->arrayToXml($value, $subnode);
             } else {
                 if (is_numeric($key)) $key = "item$key";
-                $xml->addChild($key, htmlspecialchars($value));
+                $xml->addChild($key, htmlspecialchars((string) $value));
             }
         }
     }

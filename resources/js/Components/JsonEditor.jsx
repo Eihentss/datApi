@@ -2,16 +2,18 @@ import { useState, useEffect, useRef } from "react";
 import { jsonrepair } from "jsonrepair";
 import Toast from "@/Components/Toast";
 
-export default function DataEditor({ format, data, setData }) {
+export default function JsonEditor({ format, data, setData }) {
   const [error, setError] = useState("");
-  
   const [toast, setToast] = useState(null);
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
 
+  // konvertē objektus uz string textarea
+  const stringData = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+
   useEffect(() => {
-    validateData(data, format);
-  }, [data, format]);
+    if (stringData) validateData(stringData, format);
+  }, [stringData, format]);
 
   const handleScroll = () => {
     if (lineNumbersRef.current && textareaRef.current) {
@@ -21,21 +23,18 @@ export default function DataEditor({ format, data, setData }) {
 
   const validateData = (input, type) => {
     try {
-      if (type === "json") {
-        JSON.parse(input);
-      } else if (type === "xml") {
+      if (type === "json") JSON.parse(input);
+      else if (type === "xml") {
         const parser = new DOMParser();
         const parsed = parser.parseFromString(input, "application/xml");
-        if (parsed.getElementsByTagName("parsererror").length) {
+        if (parsed.getElementsByTagName("parsererror").length)
           throw new Error("XML nav derīgs");
-        }
       } else if (type === "csv") {
         const rows = input.trim().split("\n");
         const cols = rows[0].split(",");
         for (let row of rows) {
-          if (row.split(",").length !== cols.length) {
+          if (row.split(",").length !== cols.length)
             throw new Error("CSV kolonnu skaits nav vienāds visās rindās");
-          }
         }
       }
       setError("");
@@ -47,74 +46,10 @@ export default function DataEditor({ format, data, setData }) {
   const handleFixJson = () => {
     if (format !== "json") return;
     try {
-      let repairedData = data.trim();
-      
-      let attempts = [
-        () => {
-          const repaired = jsonrepair(repairedData);
-          return JSON.stringify(JSON.parse(repaired), null, 2);
-        },
-        
-        () => {
-          const objects = repairedData
-            .split(/}\s*{/)
-            .map((part, index, array) => {
-              if (index === 0 && array.length > 1) return part + '}';
-              if (index === array.length - 1 && array.length > 1) return '{' + part;
-              if (array.length > 1) return '{' + part + '}';
-              return part;
-            })
-            .filter(part => part.trim());
-
-          if (objects.length > 1) {
-            const parsedObjects = objects.map(obj => {
-              const cleaned = obj.trim();
-              try {
-                return JSON.parse(jsonrepair(cleaned));
-              } catch {
-                return JSON.parse(cleaned);
-              }
-            });
-            
-            return JSON.stringify(parsedObjects, null, 2);
-          }
-          throw new Error("Nav vairāki objekti");
-        },
-        
-        () => {
-          const withCommas = repairedData.replace(/}\s*{/g, '},{');
-          const arrayFormat = '[' + withCommas + ']';
-          const repaired = jsonrepair(arrayFormat);
-          return JSON.stringify(JSON.parse(repaired), null, 2);
-        },
-        
-        () => {
-          const cleaned = repairedData
-            .replace(/}\s*{/g, '},{')
-            .replace(/^\s*/, '[')
-            .replace(/\s*$/, ']');
-          
-          const repaired = jsonrepair(cleaned);
-          return JSON.stringify(JSON.parse(repaired), null, 2);
-        }
-      ];
-      
-      let lastError;
-      for (let attempt of attempts) {
-        try {
-          const result = attempt();
-          setData(result);
-          setError("");
-          setToast({ message: "JSON ir salabots!", type: "success" });
-          return;
-        } catch (err) {
-          lastError = err;
-          continue;
-        }
-      }
-      
-      throw lastError || new Error("Nevarēja salabot JSON");
-      
+      const repaired = JSON.stringify(JSON.parse(jsonrepair(stringData)), null, 2);
+      setData(repaired);
+      setError("");
+      setToast({ message: "JSON ir salabots!", type: "success" });
     } catch (err) {
       setError(`JSON nav derīgs: ${err.message}`);
       setToast({ message: "Nevarēja salabot JSON!", type: "error" });
@@ -127,58 +62,45 @@ export default function DataEditor({ format, data, setData }) {
       const textarea = e.target;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-
-      const newValue = data.substring(0, start) + "  " + data.substring(end);
+      const newValue = stringData.substring(0, start) + "  " + stringData.substring(end);
       setData(newValue);
-
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2;
       }, 0);
     }
   };
 
-  const lines = data.split("\n");
+  const lines = stringData ? stringData.split("\n") : [];
   const lineCount = lines.length;
 
   return (
-    <div className="bg-white rounded-2xl shadow p-8 space-y-6">
-      <div className="border rounded-lg overflow-hidden h-[600px] relative">
-        <div className="flex h-full">
-          <div 
-            ref={lineNumbersRef}
-            className="bg-black text-white font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
-            style={{ 
-              borderRight: '1px solid rgb(0, 0, 0)',
-              height: '600px'
-            }}
-          >
-            <div className="pointer-events-none">
-              {Array.from({ length: lineCount }, (_, i) => (
-                <div key={i} className="text-right pr-2" style={{ height: '24px' }}>
-                  {i + 1}
-                </div>
-              ))}
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex-1 flex border rounded-lg overflow-hidden">
+        <div
+          ref={lineNumbersRef}
+          className="bg-black text-white font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
+          style={{ borderRight: "1px solid rgb(0,0,0)" }}
+        >
+          {Array.from({ length: lineCount }, (_, i) => (
+            <div key={i} className="text-right pr-2" style={{ height: "24px" }}>
+              {i + 1}
             </div>
-          </div>
-          
-          <textarea
-            ref={textareaRef}
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onScroll={handleScroll}
-            spellCheck={false}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            className="flex-1 h-full resize-none p-3 font-mono text-sm leading-6 bg-black text-white focus:outline-none focus:ring-2 focus:ring-black overflow-y-auto"
-            style={{ 
-              height: "600px",
-              WebkitTextSizeAdjust: "100%"
-            }}
-            placeholder="Ievadiet savu datu..."
-          />
+          ))}
         </div>
+
+        <textarea
+          ref={textareaRef}
+          value={stringData}
+          onChange={(e) => setData(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onScroll={handleScroll}
+          spellCheck={false}
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          className="flex-1 h-full p-3 font-mono text-sm leading-6 bg-black text-white focus:outline-none focus:ring-2 focus:ring-black resize-none overflow-y-auto"
+          placeholder="Ievadiet savu datu..."
+        />
       </div>
 
       {error && (
@@ -196,13 +118,7 @@ export default function DataEditor({ format, data, setData }) {
         </div>
       )}
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }
