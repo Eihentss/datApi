@@ -133,6 +133,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             });
 
             let data;
+            console.log(response);
             try {
                 data = await response.json();
             } catch {
@@ -155,7 +156,6 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                 onDelete(initialData.id);
             }
 
-            // Close modal after short delay to show success message
             setTimeout(() => {
                 setShowDeleteConfirm(false);
                 onClose();
