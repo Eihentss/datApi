@@ -5,6 +5,8 @@ use App\Models\ApiResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
+use App\Models\StatsForRoute;
+use App\Models\ApiError;
 
 class ApiResourceController extends Controller
 {
@@ -13,6 +15,39 @@ class ApiResourceController extends Controller
         $resources = ApiResource::where('user_id', auth()->id())->get();
         return Inertia::render('Create', [
             'resources' => $resources,
+        ]);
+    }
+
+    public function statistics(Request $request, ApiResource $apiResource)
+    {
+        if ($apiResource->user_id !== $request->user()->id) {
+            return redirect()->route('maniapi')->with('error', 'Nav atļaujas skatīt šā API statistiku!');
+        }
+    
+        $stats = StatsForRoute::where('api_resource_id', $apiResource->id)->first();
+    
+        $errors = ApiError::where('api_resource_id', $apiResource->id)
+            ->latest()
+            ->take(50) // pēdējās 50 kļūdas
+            ->get()
+            ->map(fn($err) => [
+                'date' => $err->created_at->format('Y-m-d H:i:s'),
+                'message' => $err->message,
+                'method' => $err->method,
+                'endpoint' => $err->endpoint,
+                'status_code' => $err->status_code,
+            ]);
+    
+        return Inertia::render('ApiStatistics', [
+            'statistics' => [
+                'requests' => [], // ja nākotnē gribi grafikus pa dienām
+                'errors' => $errors,
+                'total_requests' => $stats->total_requests ?? 0,
+                'get_requests' => $stats->get_requests ?? 0,
+                'post_requests' => $stats->post_requests ?? 0,
+                'put_requests' => $stats->put_requests ?? 0,
+                'delete_requests' => $stats->delete_requests ?? 0,
+            ],
         ]);
     }
 
@@ -207,23 +242,5 @@ class ApiResourceController extends Controller
         ]);
     }
 
-    public function statistics(Request $request, ApiResource $apiResource)
-    {
-        if ($apiResource->user_id !== $request->user()->id) {
-            return redirect()->route('maniapi')->with('error', 'Nav atļaujas skatīt šā API statistiku!');
-        }
 
-        $stats = [
-            'total_requests' => 0,
-            'requests_today' => 0,
-            'requests_this_month' => 0,
-            'last_request' => null,
-            'most_used_method' => 'GET',
-        ];
-
-        return Inertia::render('ApiStatistics', [
-            'resource' => $apiResource,
-            'statistics' => $stats,
-        ]);
-    }
 }

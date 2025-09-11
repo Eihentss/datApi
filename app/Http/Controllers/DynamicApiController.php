@@ -5,6 +5,9 @@ use Illuminate\Http\Request;
 use App\Models\ApiResource;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use App\Models\StatsForRoute;
+use App\Models\ApiError ;
+
 
 class DynamicApiController extends Controller
 {
@@ -13,14 +16,30 @@ class DynamicApiController extends Controller
         $resource = ApiResource::where('route', '/' . $slug)->first();
         
         if (!$resource) {
-            // Ja ir AJAX pieprasījums vai JSON pieprasījums, atgriezt JSON
+            // Saglabā kļūdu DB
+            ApiError::create([
+                'api_resource_id' => 0, // nav resursa, var atstāt 0 vai null
+                'message' => "API '$slug' nav atrasts",
+                'method' => $request->method(),
+                'endpoint' => '/' . $slug,
+                'status_code' => 404,
+            ]);
+        
             if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
                 return response()->json(['message' => 'API not found'], 404);
             }
             
-            // Citādi aizmest uz welcome page
             return redirect('/')->with('error', 'API nav atrasts');
         }
+
+        $method = $request->method();
+        $stats = StatsForRoute::firstOrCreate(
+            ['api_resource_id' => $resource->id],
+            []
+        );
+
+        
+        $stats->increment('total_requests');
 
         if ($resource->visibility === 'private') {
             // Ja lietotājs ir autentificēts un šis API ir viņa, ļauj
@@ -30,12 +49,18 @@ class DynamicApiController extends Controller
                 // citādi pārbauda password
                 $password = $request->input('password') ?? $request->header('X-API-PASSWORD');
                 if (!$password || !Hash::check($password, $resource->password)) {
-                    // Pārbauda vai ir AJAX/JSON pieprasījums
+                    ApiError::create([
+                        'api_resource_id' => $resource->id,
+                        'message' => "Unauthorized access attempt to {$resource->route}",
+                        'method' => $method,
+                        'endpoint' => $resource->route,
+                        'status_code' => 403,
+                    ]);
+                
                     if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
                         return response()->json(['message' => 'Unauthorized: incorrect password'], 403);
                     }
-                    
-                    // Citādi aizmest uz welcome page ar kļūdas ziņojumu
+                
                     return redirect('/')->with('error', 'Nav autorizācijas šim API');
                 }
             }
@@ -45,10 +70,16 @@ class DynamicApiController extends Controller
 
         $cacheKey = "api_rate_limit:{$resource->id}:{$method}:" . $request->ip();
         if (!Cache::add($cacheKey, true, 3)) {
+            ApiError::create([
+                'api_resource_id' => $resource->id,
+                'message' => "Too many requests",
+                'method' => $method,
+                'endpoint' => $resource->route,
+                'status_code' => 429,
+            ]);
+        
             if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
-                return response()->json([
-                    'message' => 'Too Many Requests: wait before trying again'
-                ], 429);
+                return response()->json(['message' => 'Too Many Requests'], 429);
             }
             
             return redirect('/')->with('error', 'Pārāk daudz pieprasījumu. Lūdzu uzgaidiet.');
@@ -63,10 +94,18 @@ class DynamicApiController extends Controller
         ];
 
         if (isset($methodErrors[$method]) && $methodErrors[$method]) {
+            ApiError::create([
+                'api_resource_id' => $resource->id,
+                'message' => "$method metode nav atļauta",
+                'method' => $method,
+                'endpoint' => $resource->route,
+                'status_code' => 403,
+            ]);
+        
             if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
                 return response()->json(['message' => "$method not allowed"], 403);
             }
-            
+        
             return redirect('/')->with('error', "HTTP $method metode nav atļauta šim API");
         }
 
@@ -74,18 +113,23 @@ class DynamicApiController extends Controller
 
         switch ($method) {
             case 'GET':
+                $stats->increment('get_requests');
                 return $this->formatResponse($resource->format, $schema);
-
+                
             case 'POST':
                 $newData = $request->all();
                 unset($newData['password']);
                 $resource->schema = array_merge((array) $schema, $newData);
                 $resource->save();
+                $stats->increment('post_requests');
+
                 return $this->formatResponse($resource->format, $resource->schema, 'POST successful. Data added.');
 
             case 'DELETE':
                 $resource->schema = [];
                 $resource->save();
+                $stats->increment('delete_requests');
+
                 return $this->formatResponse($resource->format, ['message' => 'All data deleted successfully', 'data' => $resource->schema]);
 
             case 'PUT':
@@ -93,8 +137,11 @@ class DynamicApiController extends Controller
                 unset($newData['password']);
                 $resource->schema = $newData;
                 $resource->save();
+                $stats->increment('put_requests');
+
                 return $this->formatResponse($resource->format, $resource->schema, 'PUT successful. Data replaced.');
         }
+        $stats->save();
 
         return $this->formatResponse($resource->format, $schema);
     }
