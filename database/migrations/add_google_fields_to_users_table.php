@@ -14,11 +14,8 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->string('google_id')->nullable()->after('email');
             $table->string('avatar')->nullable()->after('google_id');
-            
-            // Make password nullable since Google users might not have one
+            $table->string('isgoogle')->default(false);
             $table->string('password')->nullable()->change();
-            
-            // Add index for better performance
             $table->index('google_id');
         });
     }

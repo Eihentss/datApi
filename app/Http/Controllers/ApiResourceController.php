@@ -115,70 +115,84 @@ class ApiResourceController extends Controller
     }
 
     public function update(Request $request, ApiResource $apiResource)
-    {
-        if ($apiResource->user_id !== $request->user()->id) {
+{
+    if ($apiResource->user_id !== $request->user()->id) {
+        return response()->json([
+            'message' => 'Nav atļaujas editēt šo API!'
+        ], 403);
+    }
+
+    $request->validate([
+        'route' => 'required|string|max:255',
+        'format' => 'required|in:json,xml,yaml',
+        'visibility' => 'required|in:public,private',
+        'password' => 'nullable|string|min:4',
+    ]);
+
+    $route = $request->input('route');
+
+    if (str_starts_with($route, '/api')) {
+        return response()->json([
+            'message' => "Route nevar sākties ar '/api'!"
+        ], 422);
+    }
+
+    $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
+    if (in_array(ltrim($route, '/'), $existingRoutes) && $route !== $apiResource->route) {
+        return response()->json([
+            'message' => 'Šāds route jau eksistē sistēmā!'
+        ], 422);
+    }
+
+    if (
+        ApiResource::where('route', $route)
+            ->where('id', '!=', $apiResource->id)
+            ->exists()
+    ) {
+        return response()->json([
+            'message' => 'Šāds route jau eksistē datubāzē!'
+        ], 422);
+    }
+
+    $schema = $request->input('schema');
+    if (is_string($schema)) {
+        $schema = json_decode($schema, true);
+    }
+
+    $apiResource->route = $route;
+    $apiResource->format = $request->input('format');
+    $apiResource->visibility = $request->input('visibility');
+    $apiResource->allow_get = $request->boolean('allow_get');
+    $apiResource->allow_post = $request->boolean('allow_post');
+    $apiResource->allow_put = $request->boolean('allow_put');
+    $apiResource->allow_delete = $request->boolean('allow_delete');
+    $apiResource->schema = $schema;
+
+    if ($apiResource->visibility === 'private') {
+        // Ja parole vēl nav iestatīta vai lietotājs ievadīja jaunu
+        if (!$apiResource->password && !$request->filled('password')) {
             return response()->json([
-                'message' => 'Nav atļaujas editēt šo API!'
-            ], 403);
-        }
-
-        $request->validate([
-            'route' => 'required|string|max:255',
-            'format' => 'required|in:json,xml,yaml',
-            'visibility' => 'required|in:public,private',
-            'password' => 'nullable|string|min:4',
-        ]);
-
-        $route = $request->input('route');
-
-        if (str_starts_with($route, '/api')) {
-            return response()->json([
-                'message' => "Route nevar sākties ar '/api'!"
+                'message' => 'Privātam API nepieciešama parole!'
             ], 422);
         }
 
-        $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
-        if (in_array(ltrim($route, '/'), $existingRoutes) && $route !== $apiResource->route) {
-            return response()->json([
-                'message' => 'Šāds route jau eksistē sistēmā!'
-            ], 422);
-        }
-
-        if (
-            ApiResource::where('route', $route)
-                ->where('id', '!=', $apiResource->id)
-                ->exists()
-        ) {
-            return response()->json([
-                'message' => 'Šāds route jau eksistē datubāzē!'
-            ], 422);
-        }
-
-        $schema = $request->input('schema');
-        if (is_string($schema)) {
-            $schema = json_decode($schema, true);
-        }
-
-        $apiResource->route = $route;
-        $apiResource->format = $request->input('format');
-        $apiResource->visibility = $request->input('visibility');
-        $apiResource->allow_get = $request->boolean('allow_get');
-        $apiResource->allow_post = $request->boolean('allow_post');
-        $apiResource->allow_put = $request->boolean('allow_put');
-        $apiResource->allow_delete = $request->boolean('allow_delete');
-        $apiResource->schema = $schema;
-
-        if ($apiResource->visibility === 'private' && $request->filled('password')) {
+        if ($request->filled('password')) {
             $apiResource->password = Hash::make($request->input('password'));
         }
-
-        $apiResource->save();
-
-        return response()->json([
-            'message' => 'API veiksmīgi atjaunots!',
-            'resource' => $apiResource,
-        ]);
+    } else {
+        // Ja mainīts uz public, dzēšam paroli
+        $apiResource->password = null;
     }
+
+    $apiResource->save();
+
+    return response()->json([
+        'message' => 'API veiksmīgi atjaunots!',
+        'resource' => $apiResource,
+    ]);
+}
+
+
 
     public function destroy(Request $request, ApiResource $apiResource)
     {

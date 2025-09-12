@@ -55,6 +55,7 @@ class GoogleAuthController extends Controller
                 'avatar' => $googleUser->avatar,
                 'email_verified_at' => now(), // Google emails are already verified
                 'password' => Hash::make(Str::random(32)), // Random password since they use Google
+                'isgoogle' => true,
             ]);
             
             event(new Registered($newUser));

@@ -10,6 +10,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
         allow_post: false,
         allow_put: false,
         allow_delete: false,
+        password: "",
     });
 
     const [loading, setLoading] = useState(false);
@@ -27,13 +28,13 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                     format: initialData.format || "json",
                     visibility: initialData.visibility || "public",
                     schema: initialData.schema || "",
-                    allow_get: initialData.allow_get || false,
-                    allow_post: initialData.allow_post || false,
-                    allow_put: initialData.allow_put || false,
-                    allow_delete: initialData.allow_delete || false,
+                    allow_get: !!initialData.allow_get,
+                    allow_post: !!initialData.allow_post,
+                    allow_put: !!initialData.allow_put,
+                    allow_delete: !!initialData.allow_delete,
+                    password: "", // password netiek automātiski parādīts
                 });
             } else {
-                // Reset form for new resource
                 setFormData({
                     route: "",
                     format: "json",
@@ -43,6 +44,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                     allow_post: false,
                     allow_put: false,
                     allow_delete: false,
+                    password: "",
                 });
             }
         }
@@ -56,13 +58,12 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             ...prev,
             [name]: type === "checkbox" ? checked : value,
         }));
-        // Clear errors when user starts typing
         if (error) setError("");
-    };
+    }
 
     const handleSubmit = async () => {
         if (loading) return;
-        
+
         setLoading(true);
         setError("");
         setSuccess("");
@@ -71,9 +72,14 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             const url = initialData?.id
                 ? `/api-resources/${initialData.id}`
                 : "/api-resources";
-        
             const method = initialData?.id ? "PUT" : "POST";
-    
+
+            // Nosūta tikai password, ja tas ir aizpildīts
+            const payload = { ...formData };
+            if (formData.password === "") {
+                delete payload.password;
+            }
+
             const response = await fetch(url, {
                 method,
                 headers: {
@@ -82,28 +88,27 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                         .querySelector('meta[name="csrf-token"]')
                         ?.getAttribute("content"),
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
-    
+
             let data;
             try {
                 data = await response.json();
             } catch {
                 throw new Error("Serveris neatgrieza JSON atbildi");
             }
-    
+
             if (!response.ok) {
                 setError(data.message || "Kļūda saglabājot API");
                 return;
             }
 
             setSuccess(data.message || "API veiksmīgi saglabāts!");
-    
+
             if (data.resource) {
                 onSave(data.resource);
             }
 
-            // Close modal after short delay to show success message
             setTimeout(() => {
                 onClose();
             }, 1000);
@@ -117,7 +122,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
 
     const handleDelete = async () => {
         if (!initialData?.id || loading) return;
-        
+
         setLoading(true);
         setError("");
         setSuccess("");
@@ -137,7 +142,6 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             try {
                 data = await response.json();
             } catch {
-                // If no JSON response, check if request was successful
                 if (response.ok) {
                     data = { message: "API veiksmīgi dzēsts!" };
                 } else {
@@ -152,9 +156,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
 
             setSuccess(data.message || "API veiksmīgi dzēsts!");
 
-            if (onDelete) {
-                onDelete(initialData.id);
-            }
+            if (onDelete) onDelete(initialData.id);
 
             setTimeout(() => {
                 setShowDeleteConfirm(false);
@@ -236,6 +238,18 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                         <option value="public">Public</option>
                         <option value="private">Private</option>
                     </select>
+
+                    {formData.visibility === "private" && (
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder={initialData?.id ? "******** (atstāj tukšu, ja nemainīt)" : "Ievadi paroli šim API"}
+                            className="w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                            disabled={loading}
+                        />
+                    )}
 
                     {/* HTTP Methods */}
                     <div className="grid grid-cols-2 gap-2">

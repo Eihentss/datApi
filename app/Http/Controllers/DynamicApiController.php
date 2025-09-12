@@ -82,7 +82,7 @@ class DynamicApiController extends Controller
                 return response()->json(['message' => 'Too Many Requests'], 429);
             }
             
-            return redirect('/')->with('error', 'Pārāk daudz pieprasījumu. Lūdzu uzgaidiet.');
+            // return redirect('/')->with('error', 'Pārāk daudz pieprasījumu. Lūdzu uzgaidiet.');
         }
 
         // Pārbauda HTTP metodes
