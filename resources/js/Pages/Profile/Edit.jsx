@@ -22,7 +22,6 @@ export default function Edit({ resource, mustVerifyEmail, status }) {
                         </h2>
                     </div>
 
-                    {/* Vienmēr rādam profila informācijas update formu */}
                     <div className="bg-white border border-black p-4 shadow-lg sm:rounded-lg sm:p-8">
                         <UpdateProfileInformationForm
                             resource={resource}
@@ -31,7 +30,6 @@ export default function Edit({ resource, mustVerifyEmail, status }) {
                         />
                     </div>
 
-                    {/* Ja lietotājs NAV ar Google loginu (google_id nav) — rādām paroles un dzēšanas formas */}
                     {user.isgoogle == 0 && (
                         <>
                             <div className="bg-white border border-black p-4 shadow-lg sm:rounded-lg sm:p-8">

@@ -11,7 +11,7 @@ export default function ManiApi() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [showEditor, setShowEditor] = useState(false);
-    const [selectedResource, setSelectedResource] = useState(null); // 👈 te glabājam izvēlēto
+    const [selectedResource, setSelectedResource] = useState(null);
     const itemsPerPage = 20;
     const loading = resources === undefined;
 

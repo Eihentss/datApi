@@ -113,16 +113,15 @@ export default function Docx(auth) {
                         <p className="text-gray-700 mt-2">
                             Piemērs JSON formātam:
                         </p>
-                        <pre className="bg-black text-green-400 p-4 rounded-lg overflow-x-auto mt-2">
-                            {`{
-                                "users": [
-                                    {
-                                    "id": 1,
-                                    "name": "Jānis Bērziņš",
-                                    "email": "janis@example.com"
-                                    }
-                                ]
-                                }`}
+                        <pre className="bg-black text-white p-4 rounded-lg overflow-x-auto mt-2">
+{`{
+ "users": [
+ {
+    "id": 1,
+    "name": "Jānis Bērziņš",
+    "email": "janis@example.com"
+ }]
+}`}
                         </pre>
                     </section>
 

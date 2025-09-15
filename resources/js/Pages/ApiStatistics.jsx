@@ -1,39 +1,17 @@
-// import React from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { Activity, BarChart3, Users, AlertCircle, TrendingUp, Globe, Eye } from "lucide-react";
-import Navbar from "@/Components/Navbar";
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react";
 import { Head } from "@inertiajs/react";
+import Navbar from "@/Components/Navbar";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Activity, Globe, Users, AlertCircle, TrendingUp, BarChart3 } from "lucide-react";
 
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-2xl border border-gray-200 shadow-lg ${className}`}>
-    {children}
-  </div>
+  <div className={`bg-white rounded-2xl border border-gray-200 shadow-lg ${className}`}>{children}</div>
 );
 
-const CardHeader = ({ children, className = "" }) => (
-  <div className={`p-6 pb-4 ${className}`}>
-    {children}
-  </div>
-);
-
-const CardTitle = ({ children, className = "" }) => (
-  <h3 className={`text-xl font-semibold text-gray-800 ${className}`}>
-    {children}
-  </h3>
-);
-
-const CardDescription = ({ children, className = "" }) => (
-  <p className={`text-sm text-gray-600 mt-2 ${className}`}>
-    {children}
-  </p>
-);
-
-const CardContent = ({ children, className = "" }) => (
-  <div className={`p-6 pt-0 ${className}`}>
-    {children}
-  </div>
-);
+const CardHeader = ({ children, className = "" }) => <div className={`p-6 pb-4 ${className}`}>{children}</div>;
+const CardTitle = ({ children, className = "" }) => <h3 className={`text-xl font-semibold text-gray-800 ${className}`}>{children}</h3>;
+const CardDescription = ({ children, className = "" }) => <p className={`text-sm text-gray-600 mt-2 ${className}`}>{children}</p>;
+const CardContent = ({ children, className = "" }) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
 
 const StatCard = ({ title, value, icon: Icon, trend, color = "blue" }) => {
   const colorClasses = {
@@ -67,7 +45,6 @@ const StatCard = ({ title, value, icon: Icon, trend, color = "blue" }) => {
 };
 
 export default function ApiStatistics({ statistics }) {
-  const [activeChart, setActiveChart] = useState("GET");
   const [showAll, setShowAll] = useState(false);
 
   const safeStats = {
@@ -80,216 +57,109 @@ export default function ApiStatistics({ statistics }) {
     delete_requests: statistics?.delete_requests || 0,
   };
 
-  // ierobežo līdz 50 kļūdām
   const limitedErrors = safeStats.errors.slice(0, 50);
   const displayedErrors = showAll ? limitedErrors : limitedErrors.slice(0, 5);
 
-  const chartData = [
-    { method: "GET", count: safeStats.get_requests },
-    { method: "POST", count: safeStats.post_requests },
-    { method: "PUT", count: safeStats.put_requests },
-    { method: "DELETE", count: safeStats.delete_requests },
-  ].filter(item => item.count > 0);
+  const weeklyData = useMemo(() => {
+    const weekDays = ["Pirmdiena","Otrdiena","Trešdiena","Ceturtdiena","Piektdiena","Sestdiena","Svētdiena"];
+    
+    const init = weekDays.map(day => ({ day, GET: 0, POST: 0, PUT: 0, DELETE: 0 }));
+  
+    statistics.requests.forEach(req => {
+      const dateObj = new Date(req.date);
+      const dayIndex = (dateObj.getDay() + 6) % 7;
+      if (init[dayIndex]) {
+        init[dayIndex][req.method] += 1;
+      }
+    });
+  
+    return init;
+  }, [statistics.requests]);
 
   return (
     <>
-    <Head title="Stats" />
-    <div className="min-h-screen bg-gray-50 text-black">
-
+      <Head title="Stats" />
+      <div className="min-h-screen bg-gray-50 text-black">
         <Navbar />
-        
         <div className="pt-24 max-w-7xl mx-auto p-6 space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard 
-            title="Kopā pieprasījumi" 
-            value={safeStats.total_requests} 
-            icon={Activity}
-            trend=""
-            color="blue"
-          />
-          <StatCard 
-            title="GET pieprasījumi" 
-            value={safeStats.get_requests} 
-            icon={Globe}
-            color="green"
-          />
-          <StatCard 
-            title="POST pieprasījumi" 
-            value={safeStats.post_requests} 
-            icon={Users}
-            color="purple"
-          />
-          <StatCard 
-            title="Kļūdas" 
-            value={safeStats.errors.length} 
-            icon={AlertCircle}
-            color="red"
-          />
-        </div>
-
-{/* Grafiku sekcija */}
-<Card className="py-4 sm:py-0 border-0 shadow-xl bg-gradient-to-br from-white to-blue-50">
-  <CardHeader className="flex flex-col items-stretch border-b !p-0 sm:flex-row">
-    {/* Virsraksts */}
-    <div className="flex flex-1 flex-col justify-center gap-1 px-6 pb-3 sm:pb-0">
-      <CardTitle>HTTP Metožu Statistika</CardTitle>
-      <CardDescription>
-        Pieprasījumu skaits pa HTTP metodēm
-      </CardDescription>
-    </div>
-
-    {/* Pārslēgšanas pogas */}
-    <div className="flex">
-      {["GET", "POST", "PUT", "DELETE"].map((method) => (
-        <button
-          key={method}
-          data-active={activeChart === method}
-          className="data-[active=true]:bg-blue-100 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-t-0 sm:border-l sm:px-8 sm:py-6"
-          onClick={() => setActiveChart(method)}
-        >
-          <span className="text-muted-foreground text-xs">{method}</span>
-          <span className="text-lg leading-none font-bold sm:text-2xl">
-            {safeStats[`${method.toLowerCase()}_requests`]?.toLocaleString() || 0}
-          </span>
-        </button>
-      ))}
-    </div>
-  </CardHeader>
-
-  <CardContent className="px-2 sm:p-6">
-    {chartData.length > 0 ? (
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart
-          data={chartData.map((d, i) => ({
-            date: `Diena ${i + 1}`,
-            GET: d.method === "GET" ? d.count : 0,
-            POST: d.method === "POST" ? d.count : 0,
-            PUT: d.method === "PUT" ? d.count : 0,
-            DELETE: d.method === "DELETE" ? d.count : 0,
-          }))}
-          margin={{ left: 12, right: 12 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-          <YAxis allowDecimals={false} />
-          <Tooltip />
-          <Line
-            type="monotone"
-            dataKey={activeChart}
-            stroke={
-              {
-                GET: "#10b981",
-                POST: "#3b82f6",
-                PUT: "#8b5cf6",
-                DELETE: "#ef4444",
-              }[activeChart]
-            }
-            strokeWidth={3}
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    ) : (
-      <div className="flex items-center justify-center h-[300px] text-gray-500">
-        <div className="text-center space-y-4">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
-            <BarChart3 className="h-10 w-10 text-blue-400" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="Kopā pieprasījumi" value={safeStats.total_requests} icon={Activity} color="blue" />
+            <StatCard title="GET pieprasījumi" value={safeStats.get_requests} icon={Globe} color="green" />
+            <StatCard title="POST pieprasījumi" value={safeStats.post_requests} icon={Users} color="purple" />
+            <StatCard title="Kļūdas" value={safeStats.errors.length} icon={AlertCircle} color="red" />
           </div>
-          <div>
-            <p className="text-lg font-medium text-gray-600">Nav datu attēlošanai</p>
-            <p className="text-sm text-gray-500 mt-1">
-              Grafiks parādīsies, kad būs veikti pieprasījumi
-            </p>
-          </div>
+          <p className="text-sm text-gray-500">Šodien: {new Date().toLocaleDateString()}</p>
+          <Card className="shadow-xl bg-gradient-to-br from-white to-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-6 w-6 text-indigo-500" />
+                HTTP Metožu Trend Nedēļā
+              </CardTitle>
+              <CardDescription>Pieprasījumu skaits pa metodēm (Pirmdiena–Svētdiena)</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={weeklyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB"/>
+                <XAxis dataKey="day" stroke="#6B7280" />
+                <YAxis allowDecimals={false} stroke="#6B7280"/>
+                <Tooltip />
+                <Legend verticalAlign="top" height={36}/>
+                <Line type="monotone" dataKey="GET" stroke="#10B981" strokeWidth={3} />
+                <Line type="monotone" dataKey="POST" stroke="#3B82F6" strokeWidth={3} />
+                <Line type="monotone" dataKey="PUT" stroke="#8B5CF6" strokeWidth={3} />
+                <Line type="monotone" dataKey="DELETE" stroke="#EF4444" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-red-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-gray-800">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                Kļūdu žurnāls
+              </CardTitle>
+              <CardDescription>Pēdējās sistēmas kļūdas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {safeStats.errors.length > 0 ? (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {displayedErrors.map((err, i) => (
+                    <div key={i} className="p-3 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors">
+                      <div className="flex justify-between text-sm font-medium text-red-700">
+                        <span>{err.date}</span>
+                        <span>{err.method}</span>
+                        <span>{err.status_code}</span>
+                      </div>
+                      <p className="text-sm text-red-600 mt-1">{err.message}</p>
+                    </div>
+                  ))}
+                  {safeStats.errors.length > 5 && !showAll && (
+                    <div className="text-center pt-2">
+                      <button onClick={() => setShowAll(true)} className="text-red-600 hover:text-red-800 text-sm font-medium">
+                        Skatīt visas kļūdas ({Math.min(safeStats.errors.length, 50)})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-32 text-gray-500">
+                  <div className="text-center space-y-2">
+                    <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-green-600 font-medium">Nav kļūdu!</p>
+                    <p className="text-gray-500 text-sm">Jūsu API darbojas nevainojami</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
         </div>
       </div>
-    )}
-  </CardContent>
-</Card>
-
-
-
-
-
-<Card className="border-0 shadow-xl bg-gradient-to-br from-white to-red-50">
-  <CardHeader>
-    <CardTitle className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-      <AlertCircle className="h-5 w-5 text-red-600" />
-      Kļūdu žurnāls
-    </CardTitle>
-    <CardDescription>Pēdējās sistēmas kļūdas</CardDescription>
-  </CardHeader>
-  <CardContent>
-    {safeStats.errors.length > 0 ? (
-      <div className="space-y-3 max-h-[400px] overflow-y-auto">
-        {displayedErrors.map((err, i) => (
-          <div
-            key={i}
-            className="p-3 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
-          >
-            <div className="flex items-center justify-between space-x-3">
-              {/* Kreisā puse - datums */}
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-800">{err.date}</p>
-              </div>
-
-              {/* Vidus - HTTP metode */}
-              <div className="flex-1 text-center">
-                <p className="text-sm font-medium text-red-600">Method: {err.method}</p>
-              </div>
-
-              {/* Labā puse - status code */}
-              <div className="flex-1 text-right">
-                <p className="text-sm font-medium text-red-600">Error: {err.status_code}</p>
-              </div>
-            </div>
-
-            {/* Ziņojums zemāk pa visu */}
-            <p className="text-sm text-red-600 mt-1">Message: {err.message}</p>
-          </div>
-        ))}
-
-        {safeStats.errors.length > 5 && !showAll && (
-          <div className="text-center pt-2">
-            <button
-              onClick={() => setShowAll(true)}
-              className="text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              Skatīt visas kļūdas ({Math.min(safeStats.errors.length, 50)})
-            </button>
-          </div>
-        )}
-      </div>
-    ) : (
-      <div className="flex items-center justify-center h-32 text-gray-500">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-green-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              ></path>
-            </svg>
-          </div>
-          <p className="text-green-600 font-medium">Nav kļūdu!</p>
-          <p className="text-gray-500 text-sm">Jūsu API darbojas nevainojami</p>
-        </div>
-      </div>
-    )}
-  </CardContent>
-</Card>
-
-
-        </div>
-        </div>
-      </>
-
+    </>
   );
 }

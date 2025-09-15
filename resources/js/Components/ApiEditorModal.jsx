@@ -298,14 +298,12 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                             DELETE
                         </label>
                     </div>
-
-                    {/* Editor un Statistika pogas */}
                     <div className="grid grid-cols-2 gap-4">
                         <button
                             className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm sm:text-base font-medium text-blue-700 disabled:opacity-50"
                             onClick={() => {
                                 if (initialData?.id) {
-                                    window.open(`/api-editor/${initialData.id}`, '_blank');
+                                    window.location.href = `/api-editor/${initialData.id}`;
                                 }
                             }}
                             disabled={loading || !initialData?.id}
@@ -316,7 +314,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                             className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm sm:text-base font-medium text-green-700 disabled:opacity-50"
                             onClick={() => {
                                 if (initialData?.id) {
-                                    window.open(`/api-statistics/${initialData.id}`, '_blank');
+                                    window.location.href = `/api-statistics/${initialData.id}`;
                                 }
                             }}
                             disabled={loading || !initialData?.id}
@@ -324,6 +322,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                             Statistika
                         </button>
                     </div>
+
                 </div>
 
                 {/* Delete Confirmation Modal */}

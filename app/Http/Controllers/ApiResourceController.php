@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use App\Models\StatsForRoute;
 use App\Models\ApiError;
+use App\Models\ApiRequest;
 
 class ApiResourceController extends Controller
 {
@@ -26,9 +27,20 @@ class ApiResourceController extends Controller
     
         $stats = StatsForRoute::where('api_resource_id', $apiResource->id)->first();
     
+        // Pēdējās 7 dienas
+        $startDate = now()->subDays(6)->startOfDay(); // 7 dienas: šodiena un 6 dienas atpakaļ
+    
+        $requests = ApiRequest::where('api_resource_id', $apiResource->id)
+            ->where('created_at', '>=', $startDate)
+            ->get()
+            ->map(fn($req) => [
+                'date' => $req->created_at->format('Y-m-d'),
+                'method' => $req->method,
+            ]);
+    
         $errors = ApiError::where('api_resource_id', $apiResource->id)
             ->latest()
-            ->take(50) // pēdējās 50 kļūdas
+            ->take(50)
             ->get()
             ->map(fn($err) => [
                 'date' => $err->created_at->format('Y-m-d H:i:s'),
@@ -40,7 +52,7 @@ class ApiResourceController extends Controller
     
         return Inertia::render('ApiStatistics', [
             'statistics' => [
-                'requests' => [], // ja nākotnē gribi grafikus pa dienām
+                'requests' => $requests,
                 'errors' => $errors,
                 'total_requests' => $stats->total_requests ?? 0,
                 'get_requests' => $stats->get_requests ?? 0,
@@ -50,6 +62,7 @@ class ApiResourceController extends Controller
             ],
         ]);
     }
+    
 
     public function store(Request $request)
     {
