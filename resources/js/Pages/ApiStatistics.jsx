@@ -88,7 +88,7 @@ export default function ApiStatistics({ statistics }) {
             <StatCard title="POST pieprasījumi" value={safeStats.post_requests} icon={Users} color="purple" />
             <StatCard title="Kļūdas" value={safeStats.errors.length} icon={AlertCircle} color="red" />
           </div>
-          <p className="text-sm text-gray-500">Šodien: {new Date().toLocaleDateString()}</p>
+          {/* <p className="text-sm text-gray-500">Šodien: {new Date().toLocaleDateString()}</p> */}
           <Card className="shadow-xl bg-gradient-to-br from-white to-blue-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

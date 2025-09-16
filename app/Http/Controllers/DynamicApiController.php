@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use App\Models\StatsForRoute;
 use App\Models\ApiError ;
+use App\Models\ApiRequest;
 
 
 class DynamicApiController extends Controller
@@ -32,7 +33,14 @@ class DynamicApiController extends Controller
             return redirect('/')->with('error', 'API nav atrasts');
         }
 
+ 
+
         $method = $request->method();
+        ApiRequest::create([
+            'api_resource_id' => $resource->id,
+            'method'          => $method,
+            'endpoint'        => $resource->route,
+        ]);
         $stats = StatsForRoute::firstOrCreate(
             ['api_resource_id' => $resource->id],
             []
