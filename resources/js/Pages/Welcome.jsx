@@ -175,7 +175,6 @@ export default function Welcome({ auth }) {
                             <div className="flex items-center">
                                 {auth?.user ? (
                                     <div className="text-black font-medium flex items-center space-x-2 animate-fade-in">
-                                        <Heart className="w-4 h-4 text-red-500 animate-pulse" />
                                         <span>Sveiks, {auth.user.name}!</span>
                                     </div>
                                 ) : (
@@ -192,7 +191,6 @@ export default function Welcome({ auth }) {
                     </div>
                 </nav>
 
-                {/* Hero Section */}
                 <section className="pt-32 pb-20 px-4 relative">
                     <div className="max-w-7xl mx-auto text-center relative z-20">
                         <div className="mb-8">
@@ -222,11 +220,6 @@ export default function Welcome({ auth }) {
                                     Sākt tagad
                                     <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </button>
-                                
-                                <div className="flex items-center space-x-2 text-gray-600">
-                                    <Activity className="w-5 h-5 text-green-500 animate-pulse" />
-                                    <span className="text-sm">Bez maksas • Bez saistībām</span>
-                                </div>
                             </div>
                         </div>
 
@@ -340,19 +333,19 @@ export default function Welcome({ auth }) {
                                         icon: <Terminal className="w-8 h-8" />,
                                         title: "Definējiet datu struktūru",
                                         description: "Ievadiet savus datus JSON formātā vai izvēlieties citu piemērotu struktūru. Mūsu intuitīvais redaktors palīdzēs jums.",
-                                        color: "from-blue-500 to-cyan-500"
+                                        color: "from-black to-gray-500"
                                     },
                                     {
                                         icon: <Layers className="w-8 h-8" />,
                                         title: "Konfigurējiet API",
                                         description: "Norādiet, vai jūsu API būs publisks vai privāts. Sistēma automātiski ģenerēs visus nepieciešamos endpoints.",
-                                        color: "from-purple-500 to-pink-500"
+                                        color: "from-black to-gray-500"
                                     },
                                     {
                                         icon: <Wifi className="w-8 h-8" />,
                                         title: "Izmantojiet un testējiet",
                                         description: "Jūsu API ir gatavs lietošanai! Saņemiet unikālu URL un sāciet integrēt savās aplikācijās.",
-                                        color: "from-green-500 to-emerald-500"
+                                        color: "from-black to-gray-500"
                                     }
                                 ].map((step, index) => (
                                     <div 
@@ -364,18 +357,16 @@ export default function Welcome({ auth }) {
                                             <div className={`w-14 h-14 bg-gradient-to-br ${step.color} text-white rounded-2xl flex items-center justify-center font-bold text-xl flex-shrink-0 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg`}>
                                                 {index + 1}
                                             </div>
-                                            <div className={`absolute -inset-1 bg-gradient-to-br ${step.color} rounded-2xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300`}></div>
+                                            <div className={`absolute -inset-1 bg-gradient-to-br ${step.color} rounded-2xl opacity-0 group-hover:opacity-10 blur transition-opacity duration-300`}></div>
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center mb-3">
-                                                <div className={`p-2 bg-gradient-to-br ${step.color} rounded-lg mr-3 text-white group-hover:scale-110 transition-transform duration-300`}>
-                                                    {step.icon}
-                                                </div>
+
                                                 <h3 className="text-xl font-bold group-hover:text-gray-800 transition-colors">
                                                     {step.title}
                                                 </h3>
                                             </div>
-                                            <p className="text-gray-600 group-hover:text-gray-700 transition-colors leading-relaxed">
+                                            <p className="text-gray-800 group-hover:text-gray-700 transition-colors leading-relaxed">
                                                 {step.description}
                                             </p>
                                         </div>
@@ -391,7 +382,7 @@ export default function Welcome({ auth }) {
                                             <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
                                             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
                                         </div>
-                                        <span className="text-gray-400 text-sm">api-builder.json</span>
+                                        <span className="text-gray-400 text-sm">API-Builder.json</span>
                                     </div>
                                     <div className="flex space-x-2 mb-6">
                                         <button
@@ -408,7 +399,7 @@ export default function Welcome({ auth }) {
                                             </div>
                                         </button>
                                     </div>
-                                    <pre className="text-green-400 text-sm overflow-x-auto leading-relaxed">
+                                    <pre className="text-gray-300 text-sm overflow-x-auto leading-relaxed">
                                         <code>{apiExamples[activeTab]}</code>
                                     </pre>
                                     <div className="absolute -bottom-2 -right-2 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl"></div>

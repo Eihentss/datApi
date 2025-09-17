@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Activity, Globe, Users, AlertCircle, TrendingUp, BarChart3 } from "lucide-react";
 
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-2xl border border-gray-200 shadow-lg ${className}`}>{children}</div>
+  <div className={`bg-white rounded-2xl border border-slate-200  ${className}`}>{children}</div>
 );
 
 const CardHeader = ({ children, className = "" }) => <div className={`p-6 pb-4 ${className}`}>{children}</div>;
@@ -22,12 +22,12 @@ const StatCard = ({ title, value, icon: Icon, trend, color = "blue" }) => {
     orange: "from-orange-500 to-orange-600 text-orange-600"
   };
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-gradient-to-br from-white to-gray-50">
+    <Card className="group transition-all duration-300 hover:-translate-y-1 border border-slate-200 bg-gradient-to-br from-white">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-gray-900">{value.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-black">{value.toLocaleString()}</p>
             {trend && (
               <div className="flex items-center mt-2 text-sm text-green-600">
                 <TrendingUp className="h-4 w-4 mr-1" />
@@ -61,20 +61,51 @@ export default function ApiStatistics({ statistics }) {
   const displayedErrors = showAll ? limitedErrors : limitedErrors.slice(0, 5);
 
   const weeklyData = useMemo(() => {
-    const weekDays = ["Pirmdiena","Otrdiena","Trešdiena","Ceturtdiena","Piektdiena","Sestdiena","Svētdiena"];
-    
-    const init = weekDays.map(day => ({ day, GET: 0, POST: 0, PUT: 0, DELETE: 0 }));
+    const weekDays = [
+      "Pirmdiena",
+      "Otrdiena",
+      "Trešdiena",
+      "Ceturtdiena",
+      "Piektdiena",
+      "Sestdiena",
+      "Svētdiena"
+    ];
+  
+    // Šodienas indekss (0 = Pirmdiena ... 6 = Svētdiena)
+    const todayIndex = (new Date().getDay() + 6) % 7;
+  
+    // Dienu secība: aizvadītās 6 dienas + šodiena (beigās)
+    const rotatedDays = [];
+    for (let i = 6; i >= 0; i--) {
+      rotatedDays.push(weekDays[(todayIndex - i + 7) % 7]);
+    }
+  
+    // Iniciālie dati
+    const init = rotatedDays.map(day => ({
+      day,
+      GET: 0,
+      POST: 0,
+      PUT: 0,
+      DELETE: 0
+    }));
   
     statistics.requests.forEach(req => {
       const dateObj = new Date(req.date);
-      const dayIndex = (dateObj.getDay() + 6) % 7;
-      if (init[dayIndex]) {
-        init[dayIndex][req.method] += 1;
+      const reqDayIndex = (dateObj.getDay() + 6) % 7;
+  
+      // Aprēķinām, kur šī diena ir jaunajā secībā:
+      // 0 = 6 dienas atpakaļ, ..., 6 = šodiena
+      const rotatedIndex = (reqDayIndex - (todayIndex - 6) + 7) % 7;
+  
+      if (init[rotatedIndex]) {
+        init[rotatedIndex][req.method] += 1;
       }
     });
   
     return init;
   }, [statistics.requests]);
+  
+  
 
   return (
     <>
@@ -88,8 +119,7 @@ export default function ApiStatistics({ statistics }) {
             <StatCard title="POST pieprasījumi" value={safeStats.post_requests} icon={Users} color="purple" />
             <StatCard title="Kļūdas" value={safeStats.errors.length} icon={AlertCircle} color="red" />
           </div>
-          {/* <p className="text-sm text-gray-500">Šodien: {new Date().toLocaleDateString()}</p> */}
-          <Card className="shadow-xl bg-gradient-to-br from-white to-blue-50">
+          <Card className="bg-gradient-to-br from-white border border-slate-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-6 w-6 text-indigo-500" />
@@ -113,7 +143,7 @@ export default function ApiStatistics({ statistics }) {
             </ResponsiveContainer>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-xl bg-gradient-to-br from-white to-red-50">
+          <Card className="border border-slate-200 bg-gradient-to-br from-white">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-gray-800">
                 <AlertCircle className="h-5 w-5 text-red-600" />
