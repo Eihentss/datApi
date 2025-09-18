@@ -13,6 +13,7 @@ class ApiRequest extends Model
         'api_resource_id',
         'method',
         'endpoint',
+        'response_time_ms',
     ];
 
     // Relācija uz API resursu

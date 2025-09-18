@@ -1,17 +1,12 @@
 import React, { useState, useMemo } from "react";
 import { Head } from "@inertiajs/react";
 import Navbar from "@/Components/Navbar";
+import HttpMethodsTrendChart from "@/Components/HttpMethodsTrendChart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Activity, Globe, Users, AlertCircle, TrendingUp, BarChart3 } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/Components/Card";
 
-const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-2xl border border-slate-200  ${className}`}>{children}</div>
-);
 
-const CardHeader = ({ children, className = "" }) => <div className={`p-6 pb-4 ${className}`}>{children}</div>;
-const CardTitle = ({ children, className = "" }) => <h3 className={`text-xl font-semibold text-gray-800 ${className}`}>{children}</h3>;
-const CardDescription = ({ children, className = "" }) => <p className={`text-sm text-gray-600 mt-2 ${className}`}>{children}</p>;
-const CardContent = ({ children, className = "" }) => <div className={`p-6 pt-0 ${className}`}>{children}</div>;
 
 const StatCard = ({ title, value, icon: Icon, trend, color = "blue" }) => {
   const colorClasses = {
@@ -60,52 +55,8 @@ export default function ApiStatistics({ statistics }) {
   const limitedErrors = safeStats.errors.slice(0, 50);
   const displayedErrors = showAll ? limitedErrors : limitedErrors.slice(0, 5);
 
-  const weeklyData = useMemo(() => {
-    const weekDays = [
-      "Pirmdiena",
-      "Otrdiena",
-      "Trešdiena",
-      "Ceturtdiena",
-      "Piektdiena",
-      "Sestdiena",
-      "Svētdiena"
-    ];
-  
-    // Šodienas indekss (0 = Pirmdiena ... 6 = Svētdiena)
-    const todayIndex = (new Date().getDay() + 6) % 7;
-  
-    // Dienu secība: aizvadītās 6 dienas + šodiena (beigās)
-    const rotatedDays = [];
-    for (let i = 6; i >= 0; i--) {
-      rotatedDays.push(weekDays[(todayIndex - i + 7) % 7]);
-    }
-  
-    // Iniciālie dati
-    const init = rotatedDays.map(day => ({
-      day,
-      GET: 0,
-      POST: 0,
-      PUT: 0,
-      DELETE: 0
-    }));
-  
-    statistics.requests.forEach(req => {
-      const dateObj = new Date(req.date);
-      const reqDayIndex = (dateObj.getDay() + 6) % 7;
-  
-      // Aprēķinām, kur šī diena ir jaunajā secībā:
-      // 0 = 6 dienas atpakaļ, ..., 6 = šodiena
-      const rotatedIndex = (reqDayIndex - (todayIndex - 6) + 7) % 7;
-  
-      if (init[rotatedIndex]) {
-        init[rotatedIndex][req.method] += 1;
-      }
-    });
-  
-    return init;
-  }, [statistics.requests]);
-  
-  
+
+
 
   return (
     <>
@@ -113,36 +64,38 @@ export default function ApiStatistics({ statistics }) {
       <div className="min-h-screen bg-gray-50 text-black">
         <Navbar />
         <div className="pt-24 max-w-7xl mx-auto p-6 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Esošie kopā pieprasījumi un kļūdas */}
             <StatCard title="Kopā pieprasījumi" value={safeStats.total_requests} icon={Activity} color="blue" />
             <StatCard title="GET pieprasījumi" value={safeStats.get_requests} icon={Globe} color="green" />
             <StatCard title="POST pieprasījumi" value={safeStats.post_requests} icon={Users} color="purple" />
             <StatCard title="Kļūdas" value={safeStats.errors.length} icon={AlertCircle} color="red" />
+
+            {/* Jaunās StatCard līnijas ar vidējo response time */}
+            {["GET", "POST", "PUT", "DELETE"].map((method) => {
+              // Aprēķina vidējo ms šai metodei
+              const methodRequests = safeStats.requests.filter(r => r.method === method);
+              const avgMs = methodRequests.length > 0
+                ? Math.round(methodRequests.reduce((a, b) => a + b.response_time_ms, 0) / methodRequests.length)
+                : 0;
+
+              return (
+                <StatCard
+                  key={method}
+                  title={`${method} vid. response time`}
+                  value={`${avgMs}ms`}
+                  icon={BarChart3} // vai cits icons
+                  color="orange"
+                />
+              )
+            })}
           </div>
-          <Card className="bg-gradient-to-br from-white border border-slate-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-6 w-6 text-indigo-500" />
-                HTTP Metožu Trend Nedēļā
-              </CardTitle>
-              <CardDescription>Pieprasījumu skaits pa metodēm (Pirmdiena–Svētdiena)</CardDescription>
-            </CardHeader>
-            <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB"/>
-                <XAxis dataKey="day" stroke="#6B7280" />
-                <YAxis allowDecimals={false} stroke="#6B7280"/>
-                <Tooltip />
-                <Legend verticalAlign="top" height={36}/>
-                <Line type="monotone" dataKey="GET" stroke="#10B981" strokeWidth={3} />
-                <Line type="monotone" dataKey="POST" stroke="#3B82F6" strokeWidth={3} />
-                <Line type="monotone" dataKey="PUT" stroke="#8B5CF6" strokeWidth={3} />
-                <Line type="monotone" dataKey="DELETE" stroke="#EF4444" strokeWidth={3} />
-              </LineChart>
-            </ResponsiveContainer>
-            </CardContent>
-          </Card>
+
+
+
+          <HttpMethodsTrendChart statistics={safeStats} />
+
+
           <Card className="border border-slate-200 bg-gradient-to-br from-white">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-gray-800">

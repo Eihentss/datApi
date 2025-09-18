@@ -28,7 +28,7 @@ class ApiResourceController extends Controller
         $stats = StatsForRoute::where('api_resource_id', $apiResource->id)->first();
     
         // Pēdējās 7 dienas
-        $startDate = now()->subDays(6)->startOfDay(); // 7 dienas: šodiena un 6 dienas atpakaļ
+        $startDate = now()->subDays(6)->startOfDay();
     
         $requests = ApiRequest::where('api_resource_id', $apiResource->id)
             ->where('created_at', '>=', $startDate)
@@ -36,6 +36,8 @@ class ApiResourceController extends Controller
             ->map(fn($req) => [
                 'date' => $req->created_at->format('Y-m-d'),
                 'method' => $req->method,
+                'response_time_ms' => (int) $req->response_time_ms, // pārliecinies, ka ir skaitlis
+
             ]);
     
         $errors = ApiError::where('api_resource_id', $apiResource->id)
@@ -59,9 +61,12 @@ class ApiResourceController extends Controller
                 'post_requests' => $stats->post_requests ?? 0,
                 'put_requests' => $stats->put_requests ?? 0,
                 'delete_requests' => $stats->delete_requests ?? 0,
+                'avg_response_time' => ApiRequest::where('api_resource_id', $apiResource->id)->avg('response_time_ms'), // <-- salabots, tagad tikai šim API
+
             ],
         ]);
     }
+    
     
 
     public function store(Request $request)
