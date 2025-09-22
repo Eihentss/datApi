@@ -61,7 +61,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/api-editor/{apiResource}', [ApiResourceController::class, 'editor'])
         ->name('api-editor')
         ->where('apiResource', '[0-9]+');
-    
+
     Route::get('/api-statistics/{apiResource}', [ApiResourceController::class, 'statistics'])
         ->name('api-statistics')
         ->where('apiResource', '[0-9]+');
@@ -72,4 +72,4 @@ Route::any('{slug}', [DynamicApiController::class, 'handle'])
     ->where('slug', '[a-zA-Z0-9_-]+')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

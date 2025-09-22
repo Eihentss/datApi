@@ -34,7 +34,7 @@ export default function Docx({ auth }) {
             <Head title="API Builder Dokumentācija" />
             <div className="min-h-screen bg-gray-50 text-white">
                 <Navbar auth={auth} />
-                
+
                 <div className="pt-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
                     {/* Header */}
                     <div className="text-center mb-12">
@@ -80,7 +80,7 @@ export default function Docx({ auth }) {
                         <p className="text-gray-700 leading-relaxed mb-4">
                             Route nosaka unikālu URL jūsu API resursam. Tas ir galvenais identifikators, kas ļauj piekļūt jūsu API.
                         </p>
-                        
+
                         <div className="bg-gray-100 p-6 rounded-lg mb-4 border border-gray-300">
                             <h3 className="font-semibold mb-3 text-black">Formāts un prasības:</h3>
                             <ul className="space-y-2 text-gray-700">
@@ -121,7 +121,7 @@ export default function Docx({ auth }) {
                             <Shield className="w-6 h-6 text-black mr-3" />
                             Drošība un piekļuve
                         </h2>
-                        
+
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="bg-gray-100 border border-gray-300 rounded-lg p-6">
                                 <h3 className="text-xl font-semibold text-black mb-3">Publisks API</h3>
@@ -132,7 +132,7 @@ export default function Docx({ auth }) {
                                     <li>• Redzams publisko API sarakstā</li>
                                 </ul>
                             </div>
-                            
+
                             <div className="bg-gray-200 border border-gray-400 rounded-lg p-6">
                                 <h3 className="text-xl font-semibold text-black mb-3">Privāts API</h3>
                                 <ul className="text-gray-600 space-y-2">
@@ -148,7 +148,7 @@ export default function Docx({ auth }) {
                             <h4 className="font-semibold mb-3 text-black">Privātā API autentifikācija:</h4>
                             <p className="text-gray-700 mb-3">Paroli var nodot divos veidos:</p>
                             <CodeBlock copyId="auth-query">
-{`// 1. Kā URL parametru
+                                {`// 1. Kā URL parametru
 GET /jūsu-route?password=jūsu_parole
 
 // 2. Kā HTTP header
@@ -163,7 +163,7 @@ X-API-PASSWORD: jūsu_parole`}
                             <Activity className="w-6 h-6 text-black mr-3" />
                             HTTP metodes
                         </h2>
-                        
+
                         <p className="text-gray-700 mb-6">
                             Katram API varat izvēlēties, kuras HTTP metodes ir atļautas. Sistēma automātiski apstrādās datu operācijas.
                         </p>
@@ -176,7 +176,7 @@ X-API-PASSWORD: jūsu_parole`}
                                 </div>
                                 <p className="text-gray-700 mb-3">Atgriež visus saglabātos datus no API schema.</p>
                                 <CodeBlock copyId="get-example">
-{`GET /jūsu-route
+                                    {`GET /jūsu-route
 Response: JSON/XML/YAML ar visiem datiem`}
                                 </CodeBlock>
                             </div>
@@ -188,7 +188,7 @@ Response: JSON/XML/YAML ar visiem datiem`}
                                 </div>
                                 <p className="text-gray-700 mb-3">Pievieno jaunus datus esošajiem. Dati tiek sapludināti ar schema.</p>
                                 <CodeBlock copyId="post-example">
-{`POST /jūsu-route
+                                    {`POST /jūsu-route
 Content-Type: application/json
 
 {
@@ -205,7 +205,7 @@ Content-Type: application/json
                                 </div>
                                 <p className="text-gray-700 mb-3">Pilnībā aizstāj visus datus ar jaunajiem.</p>
                                 <CodeBlock copyId="put-example">
-{`PUT /jūsu-route
+                                    {`PUT /jūsu-route
 Content-Type: application/json
 
 {
@@ -223,7 +223,7 @@ Content-Type: application/json
                                 </div>
                                 <p className="text-gray-700 mb-3">Dzēš visus datus no API schema.</p>
                                 <CodeBlock copyId="delete-example">
-{`DELETE /jūsu-route
+                                    {`DELETE /jūsu-route
 Response: {"message": "All data deleted successfully"}`}
                                 </CodeBlock>
                             </div>
@@ -236,7 +236,7 @@ Response: {"message": "All data deleted successfully"}`}
                             <Database className="w-6 h-6 text-black mr-3" />
                             Datu formāti
                         </h2>
-                        
+
                         <p className="text-gray-700 mb-6">
                             Jūsu API var atgriezt datus dažādos formātos. Formāts tiek norādīts API izveidošanas laikā.
                         </p>
@@ -246,7 +246,7 @@ Response: {"message": "All data deleted successfully"}`}
                                 <h3 className="text-xl font-semibold mb-3 text-black">JSON (JavaScript Object Notation)</h3>
                                 <p className="text-gray-700 mb-3">Populārākais formāts web API. Viegli lasāms un apstrādājams.</p>
                                 <CodeBlock copyId="json-example">
-{`{
+                                    {`{
   "users": [
     {
       "id": 1,
@@ -271,7 +271,7 @@ Response: {"message": "All data deleted successfully"}`}
                                 <h3 className="text-xl font-semibold mb-3 text-black">XML (eXtensible Markup Language)</h3>
                                 <p className="text-gray-700 mb-3">Strukturēts formāts ar tagiem. Bieži izmantots uzņēmuma sistēmās.</p>
                                 <CodeBlock language="xml" copyId="xml-example">
-{`<?xml version="1.0" encoding="UTF-8"?>
+                                    {`<?xml version="1.0" encoding="UTF-8"?>
 <root>
   <users>
     <item0>
@@ -296,7 +296,7 @@ Response: {"message": "All data deleted successfully"}`}
                                 <h3 className="text-xl font-semibold mb-3 text-black">YAML (YAML Ain't Markup Language)</h3>
                                 <p className="text-gray-700 mb-3">Cilvēkam draudzīgs formāts ar atkāpēm. Bieži izmantots konfigurācijas failos.</p>
                                 <CodeBlock language="yaml" copyId="yaml-example">
-{`users:
+                                    {`users:
   - id: 1
     name: 'Jānis Bērziņš'
     email: janis@example.com
@@ -315,7 +315,7 @@ lastUpdated: '2024-01-15T10:30:00Z'`}
                     {/* Rate Limiting & Monitoring */}
                     <section className="mb-12 bg-white rounded-xl shadow-lg p-8">
                         <h2 className="text-3xl font-semibold mb-4 text-black">Ierobežojumi un uzraudzība</h2>
-                        
+
                         <div className="grid md:grid-cols-2 gap-6">
                             <div className="bg-gray-100 border border-gray-300 rounded-lg p-6">
                                 <h3 className="text-xl font-semibold text-black mb-3">Rate Limiting</h3>
@@ -342,7 +342,7 @@ lastUpdated: '2024-01-15T10:30:00Z'`}
                     {/* Best Practices */}
                     <section className="mb-12 bg-white rounded-xl shadow-lg p-8">
                         <h2 className="text-3xl font-semibold mb-4 text-black">Labākās prakses</h2>
-                        
+
                         <div className="grid md:grid-cols-2 gap-6">
                             <div>
                                 <h3 className="text-lg font-semibold text-black mb-3 flex items-center">
@@ -379,7 +379,7 @@ lastUpdated: '2024-01-15T10:30:00Z'`}
                     {/* Common Error Codes */}
                     <section className="mb-12 bg-white rounded-xl shadow-lg p-8">
                         <h2 className="text-3xl font-semibold mb-4 text-black">Biežākie kļūdu kodi</h2>
-                        
+
                         <div className="space-y-4">
                             <div className="flex items-start p-4 bg-gray-100 rounded-lg border border-gray-300">
                                 <span className="bg-gray-800 text-white px-3 py-1 rounded text-sm font-bold mr-4">404</span>
@@ -405,7 +405,7 @@ lastUpdated: '2024-01-15T10:30:00Z'`}
                                 </div>
                             </div>
 
-                            
+
                         </div>
                     </section>
                 </div>
