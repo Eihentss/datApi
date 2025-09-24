@@ -167,6 +167,7 @@ export default function Welcome({ auth }) {
                             <div className="flex items-center space-x-2 group">
                                 <div className="w-8 h-8 bg-gradient-to-br from-black to-gray-700 rounded-lg flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300">
                                     <Code2 className="w-5 h-5 text-white" />
+                                    <img src="https://www.sexystyle.eu/i/product_gallery_desktop_image_2x/products/silexd-real-skin-supreme-17-8-liquid-silicone-dildo-1.jpg" alt="" />
                                 </div>
                                 <span className="text-xl font-bold bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">
                                     API Builder

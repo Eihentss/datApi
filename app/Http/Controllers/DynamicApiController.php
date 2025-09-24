@@ -13,15 +13,11 @@ class DynamicApiController extends Controller
 {
     public function handle(Request $request, $slug)
     {
-        // START laiks milisekundēs - sākam mērīt tūlīt pēc funkcijas izsaukuma
         $startTime = $this->getMilliseconds();
-
         $resource = ApiResource::where('route', '/' . $slug)->first();
         if (!$resource) {
-            // Aprēķinām response time pirms kļūdas apstrādes
             $endTime = $this->getMilliseconds();
             $durationMs = $endTime - $startTime;
-
             ApiError::create([
                 'api_resource_id' => 0,
                 'message' => "API '$slug' nav atrasts",
@@ -30,19 +26,14 @@ class DynamicApiController extends Controller
                 'status_code' => 404,
                 'response_time_ms' => $durationMs,
             ]);
-
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'API not found'], 404);
             }
-
             return redirect('/')->with('error', 'API nav atrasts');
         }
-
         $method = $request->method();
         $stats = StatsForRoute::firstOrCreate(['api_resource_id' => $resource->id]);
         $stats->increment('total_requests');
-
-        // Private API access
         if ($resource->visibility === 'private' && !(auth()->check() && auth()->id() === $resource->user_id)) {
             $password = $request->input('password') ?? $request->header('X-API-PASSWORD');
             if (!$password || !Hash::check($password, $resource->password)) {
@@ -57,21 +48,16 @@ class DynamicApiController extends Controller
                     'status_code' => 403,
                     'response_time_ms' => $durationMs,
                 ]);
-
                 if ($request->expectsJson()) {
                     return response()->json(['message' => 'Unauthorized: incorrect password'], 403);
                 }
-
                 return redirect('/')->with('error', 'Nav autorizācijas šim API');
             }
         }
-
-        // Rate limiting
         $cacheKey = "api_rate_limit:{$resource->id}:{$method}:" . $request->ip();
         if (!Cache::add($cacheKey, true, 3)) {
             $endTime = $this->getMilliseconds();
             $durationMs = $endTime - $startTime;
-
             ApiError::create([
                 'api_resource_id' => $resource->id,
                 'message' => "Too many requests",
@@ -85,8 +71,6 @@ class DynamicApiController extends Controller
                 return response()->json(['message' => 'Too Many Requests'], 429);
             }
         }
-
-        // HTTP metode validācija
         $methodErrors = [
             'GET' => !$resource->allow_get,
             'POST' => !$resource->allow_post,
@@ -96,7 +80,6 @@ class DynamicApiController extends Controller
         if (!empty($methodErrors[$method])) {
             $endTime = $this->getMilliseconds();
             $durationMs = $endTime - $startTime;
-
             ApiError::create([
                 'api_resource_id' => $resource->id,
                 'message' => "$method metode nav atļauta",
@@ -109,17 +92,14 @@ class DynamicApiController extends Controller
                 ? response()->json(['message' => "$method not allowed"], 403)
                 : redirect('/')->with('error', "HTTP $method metode nav atļauta šim API");
         }
-
         $schema = $resource->schema ?? [];
         $responseData = null;
         $responseMsg = null;
-
         switch ($method) {
             case 'GET':
                 $stats->increment('get_requests');
                 $responseData = $schema;
                 break;
-
             case 'POST':
                 $newData = $request->except('password');
                 $resource->schema = array_merge((array)$schema, $newData);
@@ -128,7 +108,6 @@ class DynamicApiController extends Controller
                 $responseData = $resource->schema;
                 $responseMsg = 'POST successful. Data added.';
                 break;
-
             case 'PUT':
                 $newData = $request->except('password');
                 $resource->schema = $newData;
@@ -137,43 +116,30 @@ class DynamicApiController extends Controller
                 $responseData = $resource->schema;
                 $responseMsg = 'PUT successful. Data replaced.';
                 break;
-
             case 'DELETE':
                 $resource->schema = [];
                 $resource->save();
                 $stats->increment('delete_requests');
                 $responseData = ['message' => 'All data deleted successfully', 'data' => []];
                 break;
-
             default:
                 $responseData = $schema;
         }
-
         $stats->save();
-
-        // END laiks - aprēķinām response time tikai pirms response nosūtīšanas
         $endTime = $this->getMilliseconds();
-        $durationMs = $endTime - $startTime;
-
-        // Ierakstām request ar faktisko response laiku
+        $durationMs = $endTime - $startTime; 
         ApiRequest::create([
             'api_resource_id' => $resource->id,
             'method' => $method,
             'endpoint' => $resource->route,
             'response_time_ms' => $durationMs,
         ]);
-
         return $this->formatResponse($resource->format, $responseData, $responseMsg);
     }
-
-    /**
-     * Atgriež pašreizējo laiku milisekundēs ar augstu precizitāti
-     */
     private function getMilliseconds(): float
     {
-        return microtime(true) * 1000; // microtime(true) atgriež sekundes ar decimālām daļām
+        return microtime(true) * 1000;
     }
-
     private function formatResponse($format, $data, $message = null)
     {
         switch ($format) {
