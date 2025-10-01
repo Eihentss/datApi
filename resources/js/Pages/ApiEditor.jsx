@@ -41,7 +41,7 @@ export default function ApiEditor({ resource }) {
           <h1 className="text-2xl font-bold mb-4">{fullUrl}</h1>
 
           <div className="flex-1 flex flex-col bg-white rounded-2xl shadow p-6 overflow-hidden">
-            <JsonEditor format={resource.format} data={data} setData={setData} />
+            <JsonEditor format={resource.format} data={data} setData={setData} resourceId={resource.id} />
 
             <button
               onClick={handleSave}

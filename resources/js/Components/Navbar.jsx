@@ -9,7 +9,6 @@ export default function Navbar() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef();
 
-    // aizvērt dropdown klikšķa ārpusē
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {

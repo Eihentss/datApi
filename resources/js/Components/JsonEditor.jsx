@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { jsonrepair } from "jsonrepair";
 import Toast from "@/Components/Toast";
+import axios from "axios";
 
-export default function JsonEditor({ format, data, setData }) {
+export default function JsonEditor({ format, data, setData, resourceId }) {
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
-
-  // konvertē objektus uz string textarea
+  const fileInputRef = useRef(null);
   const stringData = typeof data === "string" ? data : JSON.stringify(data, null, 2);
 
   useEffect(() => {
@@ -23,8 +23,9 @@ export default function JsonEditor({ format, data, setData }) {
 
   const validateData = (input, type) => {
     try {
-      if (type === "json") JSON.parse(input);
-      else if (type === "xml") {
+      if (type === "json") {
+        JSON.parse(input);
+      } else if (type === "xml") {
         const parser = new DOMParser();
         const parsed = parser.parseFromString(input, "application/xml");
         if (parsed.getElementsByTagName("parsererror").length)
@@ -62,7 +63,8 @@ export default function JsonEditor({ format, data, setData }) {
       const textarea = e.target;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const newValue = stringData.substring(0, start) + "  " + stringData.substring(end);
+      const newValue =
+        stringData.substring(0, start) + "  " + stringData.substring(end);
       setData(newValue);
       setTimeout(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 2;
@@ -70,12 +72,58 @@ export default function JsonEditor({ format, data, setData }) {
     }
   };
 
+  // ==== BILDES AUGŠUPIELĀDE ====
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append("image", file);
+  
+    try {
+      const { data: resp } = await axios.post(
+        `/api-resources/${resourceId}/upload-image`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+  
+      let parsed = {};
+      try {
+        parsed = JSON.parse(stringData);
+      } catch {
+        parsed = {};
+      }
+  
+      if (!Array.isArray(parsed.images)) parsed.images = [];
+  
+      const urlParts = resp.url.split("/");
+      const fileName = urlParts[urlParts.length - 1];
+  
+      const newUrl = resp.url.replace("/default/" + fileName, "/" + fileName);
+  
+      parsed.images.push(newUrl);
+  
+      const ordered = {
+        example: parsed.example || "value",
+        images: parsed.images
+      };
+  
+      setData(JSON.stringify(ordered, null, 2));
+      setToast({ message: "Bilde veiksmīgi pievienota!", type: "success" });
+    } catch (err) {
+      const msg = err.response?.data?.message || "Neizdevās augšupielādēt bildi!";
+      setToast({ message: msg, type: "error" });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = null;
+    }
+  };
+  
   const lines = stringData ? stringData.split("\n") : [];
   const lineCount = lines.length;
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      <div className="flex-1 flex border rounded-lg overflow-hidden">
+       <div className="flex-1 flex border rounded-lg overflow-hidden">
         <div
           ref={lineNumbersRef}
           className="bg-black text-white font-mono text-sm leading-6 px-3 py-3 min-w-[60px] select-none overflow-hidden"
@@ -103,6 +151,7 @@ export default function JsonEditor({ format, data, setData }) {
         />
       </div>
 
+      {/* Errors */}
       {error && (
         <div>
           <p className="text-red-500 text-sm font-medium">{error}</p>
@@ -118,7 +167,31 @@ export default function JsonEditor({ format, data, setData }) {
         </div>
       )}
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {format === "json" && resourceId && (
+        <div>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            className="hidden"
+            id="upload-image-input"
+          />
+          <label
+            htmlFor="upload-image-input"
+            className="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg shadow cursor-pointer"
+          >
+            + Pievienot bildi
+          </label>
+        </div>
+      )}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

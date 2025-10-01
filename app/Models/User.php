@@ -70,4 +70,23 @@ class User extends Authenticatable
         $hash = md5(strtolower(trim($this->email)));
         return "https://www.gravatar.com/avatar/{$hash}?d=identicon&s=80";
     }
+
+    public function apiResources()
+{
+    return $this->hasMany(ApiResource::class);
+}
+
+public function sharedApiResources()
+{
+    return $this->belongsToMany(ApiResource::class, 'api_user_permissions')
+                ->withPivot('role')
+                ->withTimestamps();
+}
+
+public function sharedApis()
+{
+    return $this->belongsToMany(ApiResource::class, 'api_user_permissions')
+        ->withPivot('role')
+        ->withTimestamps();
+}
 }

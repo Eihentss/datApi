@@ -1,5 +1,5 @@
 import { Head, usePage } from "@inertiajs/react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import Navbar from "@/Components/Navbar";
 import ApiEditorModal from "@/Components/ApiEditorModal";
@@ -8,18 +8,38 @@ import ApiCard from "@/Components/ApiCard";
 import Pagination from "@/Components/Pagination";
 
 export default function ManiApi() {
-    const { resources: initialResources } = usePage().props;
+    // Iegūst props no servera
+    const { sharedResources: initialSharedResources } = usePage().props;
+
+    // Izmanto tikai tos API, kas nāk no pivot tabulas
+    const [resources, setResources] = useState(initialSharedResources || []);
+
     const [showEditor, setShowEditor] = useState(false);
     const [selectedResource, setSelectedResource] = useState(null);
-    const [resources, setResources] = useState(initialResources || []);
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    
+
     const itemsPerPage = 20;
+
+    // Konsoles izvadīšana tikai route laukiem
+    useEffect(() => {
+        if (resources && resources.length > 0) {
+            resources.forEach((res) => {
+                console.log("API route:", res.route);
+                if (res.users && res.users.length > 0) {
+                    res.users.forEach((u) => {
+                        console.log(` - User: ${u.name} (${u.email}), Role: ${u.role}`);
+                    });
+                } else {
+                    console.log(" - Nav pievienotu lietotāju");
+                }
+            });
+        }
+    }, [resources]);
 
     const filteredResources = useMemo(() => {
         if (!resources || resources.length === 0) return [];
-        
+
         return resources.filter((res) => {
             const methods = [
                 res.allow_get && "GET",
