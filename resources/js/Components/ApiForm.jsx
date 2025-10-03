@@ -13,7 +13,6 @@ export default function ApiForm({ onToast, data, setData }) {
     const handleRouteChange = (e) => {
         let value = e.target.value;
     
-        // ja nav tukšs un nesākas ar "/", tad automātiski pieliekam
         if (value && !value.startsWith("/")) {
             value = "/" + value;
         }
@@ -104,7 +103,6 @@ export default function ApiForm({ onToast, data, setData }) {
         >
             <h2 className="text-2xl font-bold mb-4">API Konfigurācija</h2>
 
-            {/* route input */}
             <div>
                 <label className="block text-sm font-medium mb-1">Route</label>
                 <input
@@ -122,7 +120,6 @@ export default function ApiForm({ onToast, data, setData }) {
                 )}
             </div>
 
-            {/* privāts checkbox */}
             <div className="flex items-center gap-2">
                 <input
                     type="checkbox"
@@ -158,7 +155,6 @@ export default function ApiForm({ onToast, data, setData }) {
                 )}
             </AnimatePresence>
 
-            {/* datu formāts */}
             <div>
                 <label className="block text-sm font-medium mb-1">
                     Datu formāts
@@ -174,7 +170,6 @@ export default function ApiForm({ onToast, data, setData }) {
                 </select>
             </div>
 
-            {/* metodes */}
             <div>
                 <label className="block text-sm font-medium mb-3">
                     Atļautās metodes

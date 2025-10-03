@@ -79,15 +79,7 @@ Route::post('/api-resources/{apiResource}/upload-image', [ApiResourceController:
 Route::post('/images', [ImageResourceController::class, 'store']);
 Route::get('/images', [ImageResourceController::class, 'index']);
 
-
-
-// Route::any('{slug}', [DynamicApiController::class, 'handle'])
-//     ->where('slug', '[a-zA-Z0-9_-]+')
-//     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
-
-
-
-    Route::get('{slug}', [DynamicApiController::class, 'get'])
+Route::get('{slug}', [DynamicApiController::class, 'get'])
     ->where('slug', '[a-zA-Z0-9_-]+')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 

@@ -8,8 +8,9 @@ use App\Models\ApiError;
 use App\Models\ApiRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use App\Http\Controllers\BaseApiController;
 
-class DynamicApiController extends Controller
+class DynamicApiController extends BaseApiController
 {
     public function get(Request $request, $slug)
     {
@@ -41,7 +42,6 @@ class DynamicApiController extends Controller
             abort(404, 'API not found');
         }
 
-        // Autorizācija privātajiem API
         if ($resource->visibility === 'private' && !(auth()->check() && auth()->id() === $resource->user_id)) {
             $password = $request->input('password') ?? $request->header('X-API-PASSWORD');
             if (!$password || !Hash::check($password, $resource->password)) {
@@ -50,14 +50,12 @@ class DynamicApiController extends Controller
             }
         }
 
-        // Rate limit
         $cacheKey = "api_rate_limit:{$resource->id}:{$method}:" . $request->ip();
         if (!Cache::add($cacheKey, true, 3)) {
             $this->logError($resource->id, $method, $resource->route, 429, "Too many requests", $startTime);
             abort(429, 'Too Many Requests');
         }
 
-        // Pārbauda, vai metode atļauta
         if (!$this->isMethodAllowed($resource, $method)) {
             $this->logError($resource->id, $method, $resource->route, 403, "$method not allowed", $startTime);
             abort(403, "$method not allowed");
@@ -138,32 +136,5 @@ class DynamicApiController extends Controller
         ]);
     }
 
-    private function formatResponse($format, $data, $message = null)
-    {
-        return match ($format) {
-            'json' => response()->json($message ? ['message' => $message, 'data' => $data] : $data),
-            'xml' => response($this->arrayToXml((array)$data)->asXML(), 200)->header('Content-Type', 'application/xml'),
-            'yaml' => response(\Symfony\Component\Yaml\Yaml::dump((array)$data), 200)
-                        ->header('Content-Type', 'text/yaml'),
-            default => response()->json($data),
-        };
-    }
 
-    private function arrayToXml(array $data, \SimpleXMLElement $xml = null)
-    {
-        $xml = $xml ?: new \SimpleXMLElement('<root/>');
-
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                if (is_numeric($key)) $key = "item$key";
-                $subnode = $xml->addChild($key);
-                $this->arrayToXml($value, $subnode);
-            } else {
-                if (is_numeric($key)) $key = "item$key";
-                $xml->addChild($key, htmlspecialchars((string)$value));
-            }
-        }
-
-        return $xml;
-    }
 }
