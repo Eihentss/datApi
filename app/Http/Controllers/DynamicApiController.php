@@ -135,6 +135,4 @@ class DynamicApiController extends BaseApiController
             'response_time_ms' => $durationMs,
         ]);
     }
-
-
 }

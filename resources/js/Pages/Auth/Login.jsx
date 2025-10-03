@@ -270,14 +270,7 @@ export default function Login({ status, canResetPassword }) {
                                     </span>
                                 </label>
 
-                                {canResetPassword && (
-                                    <Link
-                                        href={route('password.request')}
-                                        className="text-sm text-black hover:text-gray-600 font-medium transition-colors"
-                                    >
-                                        Aizmirsi paroli?
-                                    </Link>
-                                )}
+
                             </div>
 
                             <PrimaryButton

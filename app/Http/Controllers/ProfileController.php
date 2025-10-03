@@ -41,24 +41,22 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit');
     }
 
-    /**
-     * Delete the user's account.
-     */
     public function destroy(Request $request): RedirectResponse
     {
+        // Validē, ka lietotājs ievadīja pareizo paroli
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);
 
         $user = $request->user();
 
-        Auth::logout();
+        Auth::logout(); // Izlogojam lietotāju
+        $user->delete(); // Dzēšam lietotāju
 
-        $user->delete();
-
+        // Atjaunojam sesiju
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::to('/'); // Pāradresē uz mājaslapu
     }
 }
