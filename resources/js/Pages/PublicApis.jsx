@@ -3,6 +3,7 @@ import { Code2, Search } from "lucide-react";
 import axios from "axios";
 import { useState } from "react";
 import Navbar from "@/Components/Navbar";
+import ApiSearch from "@/Components/ApiSearch";
 
 export default function PublicApis({ resources }) {
     const { auth } = usePage().props;
@@ -14,6 +15,11 @@ export default function PublicApis({ resources }) {
     const openApi = (route) => {
         const slug = route.startsWith("/") ? route.slice(1) : route;
         window.open(`/${slug}`, "_blank");
+    };
+
+    const handleSearchChange = (newSearch) => {
+        setSearch(newSearch);
+        setCurrentPage(1);
     };
 
     const filteredResources = resources.filter((res) => {
@@ -47,19 +53,12 @@ export default function PublicApis({ resources }) {
                 <div className="pt-24 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
                     <h1 className="text-4xl font-bold mb-8 text-center">Publiski pieejamie API</h1>
 
-                    <div className="flex items-center mb-8 max-w-md mx-auto bg-white rounded-xl shadow px-4 py-2">
-                        <Search className="w-5 h-5 text-gray-500 mr-2" />
-                        <input
-                            type="text"
-                            placeholder="Meklēt pēc route, formāta vai metodes..."
-                            value={search}
-                            onChange={(e) => {
-                                setSearch(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            className="w-full outline-none bg-transparent text-gray-700"
-                        />
-                    </div>
+                    <ApiSearch
+                        search={search}
+                        onSearchChange={handleSearchChange}
+                        onPageReset={() => setCurrentPage(1)}
+                    />
+                    
 
                     {currentResources.length === 0 ? (
                         <p className="text-center text-gray-700">Nav atrasts neviens API.</p>
