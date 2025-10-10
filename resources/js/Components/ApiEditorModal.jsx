@@ -14,6 +14,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
         allow_put: false,
         allow_delete: false,
         password: "",
+        sub_paths: [],
     });
 
     const [loading, setLoading] = useState(false);
@@ -42,6 +43,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                     allow_put: !!initialData.allow_put,
                     allow_delete: !!initialData.allow_delete,
                     password: "",
+                    sub_paths: initialData.sub_paths || [],
                 });
                 loadApiUsers();
             } else {
@@ -55,6 +57,7 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                     allow_put: false,
                     allow_delete: false,
                     password: "",
+                    sub_paths: [],
                 });
                 setApiUsers([]);
             }
@@ -201,6 +204,30 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
         }));
         if (error) setError("");
     }
+    const handleSubPathChange = (index, field, value) => {
+        setFormData((prev) => {
+            const newSubPaths = [...prev.sub_paths];
+            newSubPaths[index] = { ...newSubPaths[index], [field]: value };
+            return { ...prev, sub_paths: newSubPaths };
+        });
+    };
+    const addSubPath = () => {
+        setFormData((prev) => ({
+            ...prev,
+            sub_paths: [
+                ...prev.sub_paths,
+                { path: "", allow_get: false, allow_post: false, allow_put: false, allow_delete: false },
+            ],
+        }));
+    };
+
+    const removeSubPath = (index) => {
+        setFormData((prev) => {
+            const newSubPaths = [...prev.sub_paths];
+            newSubPaths.splice(index, 1);
+            return { ...prev, sub_paths: newSubPaths };
+        });
+    };
 
     const handleSubmit = async () => {
         if (loading) return;
@@ -216,17 +243,13 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             const method = initialData?.id ? "PUT" : "POST";
 
             const payload = { ...formData };
-            if (formData.password === "") {
-                delete payload.password;
-            }
+            if (formData.password === "") delete payload.password;
 
             const response = await fetch(url, {
                 method,
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        ?.getAttribute("content"),
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content"),
                 },
                 body: JSON.stringify(payload),
             });
@@ -244,14 +267,9 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             }
 
             setSuccess(data.message || "API veiksmīgi saglabāts!");
+            if (data.resource) onSave(data.resource);
 
-            if (data.resource) {
-                onSave(data.resource);
-            }
-
-            setTimeout(() => {
-                onClose();
-            }, 1000);
+            setTimeout(() => onClose(), 1000);
         } catch (err) {
             console.error("Saglabāšanas kļūda:", err);
             setError("Neizdevās saglabāt API. Lūdzu mēģiniet vēlreiz.");
@@ -316,6 +334,8 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
     const cancelDelete = () => {
         setShowDeleteConfirm(false);
     };
+    if (!show) return null;
+
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
@@ -431,6 +451,80 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                             DELETE
                         </label>
                     </div>
+                    <div className="space-y-4">
+                    <input
+                        type="text"
+                        name="route"
+                        value={formData.route}
+                        onChange={handleChange}
+                        placeholder="Route (piemēram: /mani-dati)"
+                        className="w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                        disabled={loading}
+                    />
+
+                    {/* Sub paths */}
+                    <div className="mt-4">
+                        <h3 className="font-semibold mb-2">Sub paths</h3>
+                        {formData.sub_paths.map((sub, idx) => (
+                            <div key={idx} className="border p-3 rounded-lg mb-2 space-y-2">
+                                <input
+                                    type="text"
+                                    value={sub.path}
+                                    onChange={(e) => handleSubPathChange(idx, "path", e.target.value)}
+                                    placeholder="Sub path (piemēram: /details)"
+                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                    disabled={loading}
+                                />
+                                <div className="grid grid-cols-2 gap-2">
+                                    {["get", "post", "put", "delete"].map((method) => (
+                                        <label key={method} className="flex items-center gap-2 text-sm">
+                                            <input
+                                                type="checkbox"
+                                                checked={sub[`allow_${method}`]}
+                                                onChange={(e) => handleSubPathChange(idx, `allow_${method}`, e.target.checked)}
+                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                disabled={loading}
+                                            />
+                                            {method.toUpperCase()}
+                                        </label>
+                                    ))}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => removeSubPath(idx)}
+                                    className="text-red-600 text-xs hover:text-red-700"
+                                >
+                                    Noņemt sub path
+                                </button>
+                            </div>
+                        ))}
+                        <button
+                            type="button"
+                            onClick={addSubPath}
+                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                            disabled={loading}
+                        >
+                            + Pievienot sub path
+                        </button>
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                            disabled={loading}
+                        >
+                            Aizvērt
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            disabled={loading}
+                        >
+                            {loading ? "Saglabā..." : "Saglabāt"}
+                        </button>
+                    </div>
+                </div>
 
                     {initialData?.id && (
     <div className="border-t pt-4">

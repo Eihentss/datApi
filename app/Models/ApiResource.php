@@ -14,19 +14,11 @@ class ApiResource extends Model
         'route',
         'visibility',
         'format',
-        'allow_get',
-        'allow_post',
-        'allow_put',
-        'allow_delete',
         'schema',
     ];
 
     protected $casts = [
         'schema' => 'array',
-        'allow_get' => 'boolean',
-        'allow_post' => 'boolean',
-        'allow_put' => 'boolean',
-        'allow_delete' => 'boolean',
     ];
     public function users()
     {
@@ -38,6 +30,11 @@ class ApiResource extends Model
     public function owner()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function subRoutes()
+    {
+        return $this->hasMany(ApiSubRoute::class);
     }
 
     public function hasUserAccess($userId, $requiredRole = null)

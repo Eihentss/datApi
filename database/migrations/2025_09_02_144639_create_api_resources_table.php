@@ -10,17 +10,9 @@ return new class extends Migration {
         Schema::create('api_resources', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-
-            $table->string('route'); // piemēram /users
+            $table->string('route');
             $table->enum('visibility', ['public', 'private'])->default('private');
             $table->enum('format', ['json', 'xml', 'yaml'])->default('json');
-
-            $table->boolean('allow_get')->default(true);
-            $table->boolean('allow_post')->default(false);
-            $table->boolean('allow_put')->default(false);
-            $table->boolean('allow_delete')->default(false);
-            
-            $table->string('password')->nullable(); // parole tikai privātam API
             $table->json('schema')->nullable(); // JSON struktūra
 
             $table->timestamps();

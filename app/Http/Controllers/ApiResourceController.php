@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApiResource;
+use App\Models\ApiSubRoute;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -9,11 +10,17 @@ use App\Models\StatsForRoute;
 use App\Models\ApiError;
 use App\Models\ApiRequest;
 use App\Models\User;
+use Illuminate\Support\Str;
+use App\Models\ApiUserPermission; // <-- pievieno šo
+
 class ApiResourceController extends Controller
 {
     public function index()
     {
-        $resources = ApiResource::where('user_id', auth()->id())->get();
+        $resources = ApiResource::with('subRoutes')
+            ->where('user_id', auth()->id())
+            ->get();
+            
         return Inertia::render('Create', [
             'resources' => $resources,
         ]);
@@ -67,82 +74,93 @@ class ApiResourceController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'route' => 'required|string|max:255',
-            'format' => 'required|in:json,xml,yaml',
-            'visibility' => 'required|in:public,private',
-            'password' => 'nullable|string|min:4',
-        ]);
+{
+    $request->validate([
+        'route' => 'required|string|max:255',
+        'format' => 'required|in:json,xml,yaml',
+        'visibility' => 'required|in:public,private',
+        'password' => 'nullable|string|min:4',
+        'schema' => 'nullable',
+        'sub_routes' => 'array',
+    ]);
 
-        $route = $request->input('route');
+    $route = $request->input('route');
 
-        if (str_starts_with($route, '/api')) {
-            return response()->json([
-                'message' => "Route nevar sākties ar '/api'!"
-            ], 422);
-        }
-
-        $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
-        if (in_array(ltrim($route, '/'), $existingRoutes)) {
-            return response()->json([
-                'message' => 'Šāds route jau eksistē sistēmā!'
-            ], 422);
-        }
-
-        if (ApiResource::where('route', $route)->exists()) {
-            return response()->json([
-                'message' => 'Šāds route jau eksistē datubāzē!'
-            ], 422);
-        }
-
-        $schema = $request->input('schema');
-        if (is_string($schema)) {
-            $schema = json_decode($schema, true);
-        }
-
-        $resource = new ApiResource();
-        $resource->user_id = $request->user()->id;
-        $resource->route = $route;
-        $resource->format = $request->input('format');
-        $resource->visibility = $request->input('visibility');
-        $resource->allow_get = $request->boolean('allow_get');
-        $resource->allow_post = $request->boolean('allow_post');
-        $resource->allow_put = $request->boolean('allow_put');
-        $resource->allow_delete = $request->boolean('allow_delete');
-        $resource->schema = $schema;
-
-        if ($resource->visibility === 'private') {
-            if (!$request->filled('password')) {
-                return response()->json([
-                    'message' => 'Privātam API nepieciešama parole!'
-                ], 422);
-            }
-            $resource->password = Hash::make($request->input('password'));
-        }
-
-        $resource->save();
-        $resource->users()->attach($request->user()->id, ['role' => 'owner']);
-
+    // Neļauj route sākties ar /api
+    if (str_starts_with($route, '/api')) {
         return response()->json([
-            'message' => 'API veiksmīgi izveidots!',
-            'resource' => $resource
+            'message' => "Route nevar sākties ar '/api'!"
+        ], 422);
+    }
+
+    // Pārbauda vai šis route jau eksistē
+    if (ApiResource::where('route', $route)->exists()) {
+        return response()->json([
+            'message' => 'Šāds route jau eksistē!'
+        ], 422);
+    }
+
+    // Pārliecināmies, ka schema ir JSON formātā
+    $schema = $request->input('schema');
+    if (is_string($schema)) {
+        $schema = json_decode($schema, true);
+    }
+
+    // Izveido galveno API resursu
+    $resource = new ApiResource();
+    $resource->user_id = $request->user()->id;
+    $resource->route = $route;
+    $resource->format = $request->input('format');
+    $resource->visibility = $request->input('visibility');
+    $resource->schema = $schema;
+    $resource->save();
+
+    // Ja API ir privāts un ir parole, saglabā to
+    $password = null;
+    if ($resource->visibility === 'private' && $request->filled('password')) {
+        $password = Hash::make($request->input('password'));
+    }
+
+    // Saglabā visus sub-routes no frontend
+    foreach ($request->input('sub_routes', []) as $subRoute) {
+        ApiSubRoute::create([
+            'api_resource_id' => $resource->id,
+            'sub_path' => Str::start($subRoute['sub_path'], '/'),
+            'method' => $subRoute['method'] ?? 'GET',
+            'password' => $password,
+            'is_main' => $subRoute['is_main'] ?? false,
         ]);
     }
+
+    // 🔥 Saglabā īpašnieka tiesības api_user_permissions tabulā
+    ApiUserPermission::create([
+        'api_resource_id' => $resource->id,
+        'user_id' => $request->user()->id,
+        'role' => 'owner',
+    ]);
+
+
+    return response()->json([
+        'message' => 'API veiksmīgi izveidots!',
+        'resource' => $resource->load('subRoutes'),
+    ]);
+}
 
     public function update(Request $request, ApiResource $apiResource)
     {
         $userId = $request->user()->id;
         $userRole = null;
 
+        // Pārbauda piekļuves tiesības
         if ($apiResource->user_id === $userId) {
+            // Lietotājs ir īpašnieks
         } elseif ($apiResource->hasUserAccess($userId)) {
             $userPermission = $apiResource->users()->where('user_id', $userId)->first();
             $userRole = $userPermission->pivot->role;
 
             if ($userRole === 'admin') {
+                // Admin var rediģēt tikai schema
                 $allowedFields = ['schema'];
-                $requestData = $request->only($allowedFields);
                 if (count(array_diff(array_keys($request->all()), ['schema', '_token', '_method'])) > 0) {
                     return response()->json([
                         'message' => 'Admin var rediģēt tikai datu struktūru (schema)!'
@@ -160,8 +178,14 @@ class ApiResourceController extends Controller
             'format' => 'required|in:json,xml,yaml',
             'visibility' => 'required|in:public,private',
             'password' => 'nullable|string|min:4',
+            'sub_routes' => 'nullable|array|max:5',
+            'sub_routes.*.id' => 'nullable|integer',
+            'sub_routes.*.sub_path' => 'required|string|max:100',
+            'sub_routes.*.method' => 'required|in:GET,POST,PUT,DELETE',
+            'sub_routes.*.is_main' => 'boolean',
         ]);
 
+        // Ja admin, atjauno tikai schema
         if ($userRole === 'admin') {
             $schema = $request->input('schema');
             if (is_string($schema)) {
@@ -176,27 +200,23 @@ class ApiResourceController extends Controller
             ]);
         }
 
-        $route = $request->input('route');
-        if (str_starts_with($route, '/api')) {
+        $mainRoute = $request->input('main_route');
+
+        // Pārbauda vai main route sākas ar /api
+        if (str_starts_with($mainRoute, '/api')) {
             return response()->json([
                 'message' => "Route nevar sākties ar '/api'!"
             ], 422);
         }
 
-        $existingRoutes = collect(\Route::getRoutes())->map->uri->toArray();
-        if (in_array(ltrim($route, '/'), $existingRoutes) && $route !== $apiResource->route) {
-            return response()->json([
-                'message' => 'Šāds route jau eksistē sistēmā!'
-            ], 422);
-        }
-
+        // Pārbauda vai main route jau eksistē (izņemot pašreizējo)
         if (
-            ApiResource::where('route', $route)
+            ApiResource::where('route', $mainRoute)
                 ->where('id', '!=', $apiResource->id)
                 ->exists()
         ) {
             return response()->json([
-                'message' => 'Šāds route jau eksistē datubāzē!'
+                'message' => 'Šāds galvenais route jau eksistē!'
             ], 422);
         }
 
@@ -205,34 +225,72 @@ class ApiResourceController extends Controller
             $schema = json_decode($schema, true);
         }
 
-        $apiResource->route = $route;
-        $apiResource->format = $request->input('format');
-        $apiResource->visibility = $request->input('visibility');
-        $apiResource->allow_get = $request->boolean('allow_get');
-        $apiResource->allow_post = $request->boolean('allow_post');
-        $apiResource->allow_put = $request->boolean('allow_put');
-        $apiResource->allow_delete = $request->boolean('allow_delete');
-        $apiResource->schema = $schema;
+        DB::beginTransaction();
+        try {
+            // Atjauno galveno API resursu
+            $apiResource->route = $mainRoute;
+            $apiResource->format = $request->input('format');
+            $apiResource->visibility = $request->input('visibility');
+            $apiResource->schema = $schema;
+            $apiResource->save();
 
-        if ($apiResource->visibility === 'private') {
-            if (!$apiResource->password && !$request->filled('password')) {
-                return response()->json([
-                    'message' => 'Privātam API nepieciešama parole!'
-                ], 422);
+            // Atjauno sub-routes
+            $subRoutes = $request->input('sub_routes', []);
+            $existingIds = [];
+
+            foreach ($subRoutes as $subRoute) {
+                if (isset($subRoute['id'])) {
+                    // Atjauno esošo
+                    $subRouteModel = ApiSubRoute::find($subRoute['id']);
+                    if ($subRouteModel && $subRouteModel->api_resource_id === $apiResource->id) {
+                        $subRouteModel->sub_path = $subRoute['sub_path'];
+                        $subRouteModel->method = $subRoute['method'];
+                        $subRouteModel->is_main = $subRoute['is_main'] ?? false;
+                        
+                        if ($apiResource->visibility === 'private' && $request->filled('password')) {
+                            $subRouteModel->password = Hash::make($request->input('password'));
+                        } else {
+                            $subRouteModel->password = null;
+                        }
+                        
+                        $subRouteModel->save();
+                        $existingIds[] = $subRouteModel->id;
+                    }
+                } else {
+                    // Izveido jaunu
+                    $subRouteModel = new ApiSubRoute();
+                    $subRouteModel->api_resource_id = $apiResource->id;
+                    $subRouteModel->sub_path = $subRoute['sub_path'];
+                    $subRouteModel->method = $subRoute['method'];
+                    $subRouteModel->is_main = $subRoute['is_main'] ?? false;
+                    
+                    if ($apiResource->visibility === 'private' && $request->filled('password')) {
+                        $subRouteModel->password = Hash::make($request->input('password'));
+                    }
+                    
+                    $subRouteModel->save();
+                    $existingIds[] = $subRouteModel->id;
+                }
             }
-            if ($request->filled('password')) {
-                $apiResource->password = Hash::make($request->input('password'));
-            }
-        } else {
-            $apiResource->password = null;
+
+            // Dzēš sub-routes, kas vairs nav sarakstā
+            ApiSubRoute::where('api_resource_id', $apiResource->id)
+                ->whereNotIn('id', $existingIds)
+                ->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'API veiksmīgi atjaunots!',
+                'resource' => $apiResource->load('subRoutes'),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Kļūda atjaunojot API: ' . $e->getMessage()
+            ], 500);
         }
-
-        $apiResource->save();
-
-        return response()->json([
-            'message' => 'API veiksmīgi atjaunots!',
-            'resource' => $apiResource,
-        ]);
     }
 
     public function uploadImage(Request $request, ApiResource $apiResource)
@@ -302,50 +360,62 @@ class ApiResourceController extends Controller
     public function userApis(Request $request)
     {
         $user = $request->user();
-
-        $sharedApis = $user->sharedApiResources()
-            ->with([
-                'owner:id,name,email',
-                'users:id,name,email'
-            ])
-            ->get([
-                'api_resources.id',
-                'api_resources.route',
-                'api_resources.format',
-                'api_resources.allow_get',
-                'api_resources.allow_post',
-                'api_resources.allow_put',
-                'api_resources.allow_delete',
-                'api_resources.visibility',
-                'api_resources.created_at',
-                'api_resources.schema',
-                'api_resources.user_id',
-            ])
+    
+        // Lietotāja paša API
+        $ownApis = ApiResource::where('user_id', $user->id)
+            ->with('subRoutes')
+            ->get()
             ->map(function ($api) {
-                $api->user_role = $api->pivot->role ?? null;
-                $api->owner_name = $api->owner->name ?? 'Nezināms';
+                return [
+                    'id' => $api->id,
+                    'route' => $api->route,
+                    'format' => $api->format,
+                    'visibility' => $api->visibility,
+                    'user_role' => 'owner',
+                    'created_at' => $api->created_at, // 👈 pievienots!
 
-                $api->users->each(function ($u) {
-                    $u->role = $u->pivot->role;
-                });
-
-                if ($api->owner) {
-                    $api->users->push((object) [
-                        'id' => $api->owner->id,
-                        'name' => $api->owner->name,
-                        'email' => $api->owner->email,
-                        'role' => 'owner',
-                    ]);
-                }
-
-                unset($api->owner);
-                return $api;
+                    'sub_routes' => $api->subRoutes
+                        ->filter(fn($sub) => $sub->sub_path !== $api->route) // filtrē galveno route
+                        ->map(fn($sub) => [
+                            'sub_path' => $sub->sub_path,
+                            'method' => $sub->method,
+                        ])
+                        ->values(),
+                ];
             });
-
+    
+        // Koplietoti API
+        $sharedApis = $user->sharedApiResources()
+            ->with('subRoutes')
+            ->get()
+            ->map(function ($api) {
+                return [
+                    'id' => $api->id,
+                    'route' => $api->route,
+                    'format' => $api->format,
+                    'visibility' => $api->visibility,
+                    'user_role' => $api->pivot->role ?? null,
+                    'created_at' => $api->created_at, // 👈 pievienots arī šeit!
+                    'sub_routes' => $api->subRoutes
+                        ->filter(fn($sub) => $sub->sub_path !== $api->route) // filtrē galveno route
+                        ->map(fn($sub) => [
+                            'sub_path' => $sub->sub_path,
+                            'method' => $sub->method,
+                        ])
+                        ->values(),
+                ];
+            });
+    
+        // Apvieno abus kopā
+        $allApis = $ownApis->merge($sharedApis)->unique('id')->values();
+    
         return Inertia::render('ManiApi', [
-            'sharedResources' => $sharedApis,
+            'sharedResources' => $allApis,
         ]);
     }
+    
+    
+
 
 
     public function editor(Request $request, ApiResource $apiResource)

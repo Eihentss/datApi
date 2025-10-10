@@ -1,16 +1,7 @@
 import { Settings } from "lucide-react";
 
 export default function ApiCard({ resource, onEdit, onOpen }) {
-    const getMethods = (res) => {
-        return [
-            res.allow_get && "GET",
-            res.allow_post && "POST",
-            res.allow_put && "PUT",
-            res.allow_delete && "DELETE",
-        ]
-            .filter(Boolean)
-            .join(", ");
-    };
+
 
     const formatDate = (dateString) => {
         if (!dateString) return "Nezināms";
@@ -36,9 +27,7 @@ export default function ApiCard({ resource, onEdit, onOpen }) {
                     {resource.route}
                 </h2>
                 <p>
-                    <strong>Status:</strong> {resource.visibility} <br />
                     <strong>Formāts:</strong> {resource.format.toUpperCase()} <br />
-                    <strong>Metodes:</strong> {getMethods(resource)}
                 </p>
             </div>
 

@@ -20,36 +20,11 @@ export default function ManiApi() {
     const [currentPage, setCurrentPage] = useState(1);
 
     const itemsPerPage = 20;
-
-    // Konsoles izvadīšana tikai route laukiem
-    useEffect(() => {
-        if (resources && resources.length > 0) {
-            resources.forEach((res) => {
-                console.log("API route:", res.route);
-                if (res.users && res.users.length > 0) {
-                    res.users.forEach((u) => {
-                        console.log(` - User: ${u.name} (${u.email}), Role: ${u.role}`);
-                    });
-                } else {
-                    console.log(" - Nav pievienotu lietotāju");
-                }
-            });
-        }
-    }, [resources]);
-
+    
     const filteredResources = useMemo(() => {
         if (!resources || resources.length === 0) return [];
 
         return resources.filter((res) => {
-            const methods = [
-                res.allow_get && "GET",
-                res.allow_post && "POST",
-                res.allow_put && "PUT",
-                res.allow_delete && "DELETE",
-            ]
-                .filter(Boolean)
-                .join(", ")
-                .toLowerCase();
 
             const searchTerm = search.toLowerCase();
             return (
@@ -99,6 +74,22 @@ export default function ManiApi() {
         setSelectedResource(resource);
         setShowEditor(true);
     };
+
+    useEffect(() => {
+        if (resources && resources.length > 0) {
+            resources.forEach((res) => {
+                console.log("Galvenais route:", res.route);
+                if (res.sub_routes && res.sub_routes.length > 0) {
+                    res.sub_routes.forEach((sub) => {
+                        console.log(` - Sub_path: ${sub.sub_path}, Method: ${sub.method}`);
+                    });
+                } else {
+                    console.log(" - Nav sub-routes");
+                }
+            });
+        }
+    }, [resources]);
+    
 
     const handleCloseEditor = () => {
         setShowEditor(false);
