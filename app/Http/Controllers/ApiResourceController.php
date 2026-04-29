@@ -2,6 +2,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApiResource;
+use App\Http\Requests\StoreApiResourceRequest;
+use App\Http\Requests\UpdateApiResourceRequest;
+use App\Http\Requests\UploadApiImageRequest;
+use App\Http\Requests\AddUserToApiRequest;
+use App\Http\Requests\UpdateUserRoleRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -72,76 +77,52 @@ class ApiResourceController extends Controller
         ]);
     }
 
-    public function store(Request $request)
-{
-    $request->validate([
-        'route' => 'required|string|max:255',
-        'format' => 'required|in:json,xml,yaml',
-        'visibility' => 'required|in:public,private',
-        'password' => 'nullable|string|min:4',
-        'schema' => 'nullable',
-        'allow_get' => 'boolean',
-        'allow_post' => 'boolean',
-        'allow_put' => 'boolean',
-        'allow_delete' => 'boolean',
-    ]);
+    public function store(StoreApiResourceRequest $request)
+    {
+        $validated = $request->validated();
 
-    $route = $request->input('route');
+        $route = $validated['route'];
 
-    // Neļauj route sākties ar /api
-    if (str_starts_with($route, '/api')) {
-        return response()->json([
-            'message' => "Route nevar sākties ar '/api'!"
-        ], 422);
-    }
+        // Pārliecināmies, ka schema ir JSON formātā
+        $schema = $validated['schema'] ?? null;
+        if (is_string($schema)) {
+            $schema = json_decode($schema, true);
+        }
 
-    // Pārbauda vai šis route jau eksistē
-    if (ApiResource::where('route', $route)->exists()) {
-        return response()->json([
-            'message' => 'Šāds route jau eksistē!'
-        ], 422);
-    }
-
-    // Pārliecināmies, ka schema ir JSON formātā
-    $schema = $request->input('schema');
-    if (is_string($schema)) {
-        $schema = json_decode($schema, true);
-    }
-
-    // Izveido galveno API resursu
-    $resource = new ApiResource();
-    $resource->user_id = $request->user()->id;
-    $resource->route = $route;
-    $resource->format = $request->input('format');
-    $resource->visibility = $request->input('visibility');
-    $resource->schema = $schema;
-    $resource->allow_get = $request->boolean('allow_get', true);
-    $resource->allow_post = $request->boolean('allow_post', false);
-    $resource->allow_put = $request->boolean('allow_put', false);
-    $resource->allow_delete = $request->boolean('allow_delete', false);
-    $resource->save();
-
-    // Ja API ir privāts un ir parole, saglabā to
-    if ($resource->visibility === 'private' && $request->filled('password')) {
-        $resource->password = Hash::make($request->input('password'));
+        // Izveido galveno API resursu
+        $resource = new ApiResource();
+        $resource->user_id = $request->user()->id;
+        $resource->route = $route;
+        $resource->format = $validated['format'];
+        $resource->visibility = $validated['visibility'];
+        $resource->schema = $schema;
+        $resource->allow_get = $request->boolean('allow_get', true);
+        $resource->allow_post = $request->boolean('allow_post', false);
+        $resource->allow_put = $request->boolean('allow_put', false);
+        $resource->allow_delete = $request->boolean('allow_delete', false);
         $resource->save();
+
+        // Ja API ir privāts un ir parole, saglabā to
+        if ($resource->visibility === 'private' && !empty($validated['password'])) {
+            $resource->password = Hash::make($validated['password']);
+            $resource->save();
+        }
+
+        // 🔥 Saglabā īpašnieka tiesības api_user_permissions tabulā
+        ApiUserPermission::create([
+            'api_resource_id' => $resource->id,
+            'user_id' => $request->user()->id,
+            'role' => 'owner',
+        ]);
+
+
+        return response()->json([
+            'message' => 'API veiksmīgi izveidots!',
+            'resource' => $resource,
+        ]);
     }
 
-    // 🔥 Saglabā īpašnieka tiesības api_user_permissions tabulā
-    ApiUserPermission::create([
-        'api_resource_id' => $resource->id,
-        'user_id' => $request->user()->id,
-        'role' => 'owner',
-    ]);
-
-
-    return response()->json([
-        'message' => 'API veiksmīgi izveidots!',
-        'resource' => $resource,
-    ]);
-}
-
-    public function update(Request $request, ApiResource $apiResource)
+    public function update(UpdateApiResourceRequest $request, ApiResource $apiResource)
     {
         $userId = $request->user()->id;
         $userRole = null;
@@ -168,20 +149,11 @@ class ApiResourceController extends Controller
             ], 403);
         }
 
-        $request->validate([
-            'route' => 'required|string|max:255',
-            'format' => 'required|in:json,xml,yaml',
-            'visibility' => 'required|in:public,private',
-            'password' => 'nullable|string|min:4',
-            'allow_get' => 'boolean',
-            'allow_post' => 'boolean',
-            'allow_put' => 'boolean',
-            'allow_delete' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         // Ja admin, atjauno tikai schema
         if ($userRole === 'admin') {
-            $schema = $request->input('schema');
+            $schema = $validated['schema'] ?? null;
             if (is_string($schema)) {
                 $schema = json_decode($schema, true);
             }
@@ -194,39 +166,21 @@ class ApiResourceController extends Controller
             ]);
         }
 
-        $route = $request->input('route');
-
-        // Pārbauda vai route sākas ar /api
-        if (str_starts_with($route, '/api')) {
-            return response()->json([
-                'message' => "Route nevar sākties ar '/api'!"
-            ], 422);
-        }
-
-        // Pārbauda vai route jau eksistē (izņemot pašreizējo)
-        if (
-            ApiResource::where('route', $route)
-                ->where('id', '!=', $apiResource->id)
-                ->exists()
-        ) {
-            return response()->json([
-                'message' => 'Šāds route jau eksistē!'
-            ], 422);
-        }
+        $route = $validated['route'];
 
         DB::beginTransaction();
         try {
             // Atjauno API resursu
             $apiResource->route = $route;
-            $apiResource->format = $request->input('format');
-            $apiResource->visibility = $request->input('visibility');
+            $apiResource->format = $validated['format'];
+            $apiResource->visibility = $validated['visibility'];
             $apiResource->allow_get = $request->boolean('allow_get');
             $apiResource->allow_post = $request->boolean('allow_post');
             $apiResource->allow_put = $request->boolean('allow_put');
             $apiResource->allow_delete = $request->boolean('allow_delete');
             
-            if ($request->filled('password')) {
-                $apiResource->password = Hash::make($request->input('password'));
+            if (!empty($validated['password'])) {
+                $apiResource->password = Hash::make($validated['password']);
             }
             
             $apiResource->save();
@@ -246,7 +200,7 @@ class ApiResourceController extends Controller
         }
     }
 
-    public function uploadImage(Request $request, ApiResource $apiResource)
+    public function uploadImage(UploadApiImageRequest $request, ApiResource $apiResource)
     {
         if ($apiResource->user_id !== $request->user()->id) {
             return response()->json([
@@ -254,12 +208,9 @@ class ApiResourceController extends Controller
             ], 403);
         }
 
-        $request->validate([
-            'image' => 'required|image|max:4096',
-            'folder' => 'nullable|string'
-        ]);
+        $validated = $request->validated();
 
-        $folder = $request->input('folder', 'default');
+        $folder = $validated['folder'] ?? 'default';
         $file = $request->file('image');
 
         $path = $file->store("images/{$folder}", 'public');
@@ -389,18 +340,15 @@ class ApiResourceController extends Controller
         ]);
     }
 
-    public function addUserToApi(Request $request, ApiResource $apiResource)
+    public function addUserToApi(AddUserToApiRequest $request, ApiResource $apiResource)
     {
         if ($apiResource->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Tikai īpašnieks var pievienot lietotājus!'], 403);
         }
 
-        $request->validate([
-            'email' => 'required|email',
-            'role' => 'required|in:admin,co-owner',
-        ]);
+        $validated = $request->validated();
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $validated['email'])->first();
 
         if (!$user) {
             return response()->json(['message' => 'Lietotājs ar šādu e-pastu netika atrasts!'], 404);
@@ -414,7 +362,7 @@ class ApiResourceController extends Controller
             return response()->json(['message' => 'Lietotājs jau ir pievienots šim API!'], 422);
         }
 
-        $apiResource->users()->attach($user->id, ['role' => $request->role]);
+        $apiResource->users()->attach($user->id, ['role' => $validated['role']]);
 
         return response()->json([
             'message' => 'Lietotājs veiksmīgi pievienots!',
@@ -432,20 +380,17 @@ class ApiResourceController extends Controller
 
         return response()->json(['message' => 'Lietotājs veiksmīgi noņemts!']);
     }
-    public function updateUserRole(Request $request, ApiResource $apiResource, $userId)
+
+    public function updateUserRole(UpdateUserRoleRequest $request, ApiResource $apiResource, $userId)
     {
         if ($apiResource->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Tikai īpašnieks var mainīt lomas!'], 403);
         }
 
-        $request->validate([
-            'role' => 'required|in:admin,co-owner',
-        ]);
+        $validated = $request->validated();
 
-        $apiResource->users()->updateExistingPivot($userId, ['role' => $request->role]);
+        $apiResource->users()->updateExistingPivot($userId, ['role' => $validated['role']]);
 
         return response()->json(['message' => 'Loma veiksmīgi atjaunota!']);
     }
-
-
 }

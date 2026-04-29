@@ -2,21 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreImageResourceRequest;
 use App\Models\ImageResource;
-
 use Illuminate\Support\Facades\Storage;
 
 class ImageResourceController extends Controller
 {
-    public function store(Request $request)
+    public function store(StoreImageResourceRequest $request)
     {
-        $request->validate([
-            'image' => 'required|image|max:2048', // tikai bildes, max 2MB
-            'folder_name' => 'required|string'
-        ]);
+        $validated = $request->validated();
 
-        $folder = $request->input('folder_name');
+        $folder = $validated['folder_name'];
         $file = $request->file('image');
 
         $path = $file->store("images/{$folder}", 'public');

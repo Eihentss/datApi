@@ -33,6 +33,29 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'E-pasta adrese ir obligāta.',
+            'email.email' => 'E-pasta adrese jābūt derīgai e-pasta adresei.',
+            'password.required' => 'Parole ir obligāta.',
+        ];
+    }
+
+    /**
+     * Get custom attribute names.
+     */
+    public function attributes(): array
+    {
+        return [
+            'email' => 'E-pasta adrese',
+            'password' => 'Parole',
+        ];
+    }
+
+    /**
      * Attempt to authenticate the request's credentials.
      *
      * @throws \Illuminate\Validation\ValidationException

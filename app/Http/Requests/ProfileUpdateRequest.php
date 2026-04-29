@@ -27,4 +27,31 @@ class ProfileUpdateRequest extends FormRequest
             ],
         ];
     }
+
+    /**
+     * Get custom messages for validator errors.
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Vārds ir obligāts.',
+            'name.string' => 'Vārdam jābūt tekstam.',
+            'name.max' => 'Vārds nedrīkst pārsniegt 255 rakstzīmes.',
+            'email.required' => 'E-pasta adrese ir obligāta.',
+            'email.email' => 'E-pasta adrese jābūt derīgai e-pasta adresei.',
+            'email.unique' => 'Šī e-pasta adrese jau ir izmantota.',
+            'email.max' => 'E-pasta adrese nedrīkst pārsniegt 255 rakstzīmes.',
+        ];
+    }
+
+    /**
+     * Get custom attribute names.
+     */
+    public function attributes(): array
+    {
+        return [
+            'name' => 'Vārds',
+            'email' => 'E-pasta adrese',
+        ];
+    }
 }
