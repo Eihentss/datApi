@@ -25,12 +25,20 @@ export default function ManiApi() {
         if (!resources || resources.length === 0) return [];
 
         return resources.filter((res) => {
-
             const searchTerm = search.toLowerCase();
+            
+            // Build array of enabled HTTP methods
+            const enabledMethods = [
+                res.allow_get && 'GET',
+                res.allow_post && 'POST',
+                res.allow_put && 'PUT',
+                res.allow_delete && 'DELETE'
+            ].filter(Boolean);
+            
             return (
                 res.route.toLowerCase().includes(searchTerm) ||
                 res.format.toLowerCase().includes(searchTerm) ||
-                methods.includes(searchTerm)
+                enabledMethods.some(method => method.toLowerCase().includes(searchTerm))
             );
         });
     }, [resources, search]);
