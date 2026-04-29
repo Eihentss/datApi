@@ -227,8 +227,8 @@ export default function Welcome({ auth }) {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 max-w-3xl mx-auto" data-animate id="stats">
                             {[
                                 { icon: <TrendingUp className="w-8 h-8" />, title: "Ātrs", subtitle: "API izveides laiks", color: "text-green-500" },
-                                { icon: <Gauge className="w-8 h-8" />, title: "0%", subtitle: "Programmēšanas zināšanas", color: "text-blue-500" },
-                                { icon: <Sparkles className="w-8 h-8" />, title: "∞", subtitle: "Iespējas", color: "text-purple-500" }
+                                { icon: <Gauge className="w-8 h-8" />, title: "Prasmes", subtitle: "Minimālas programēšanas prasmes", color: "text-blue-500" },
+                                { icon: <Sparkles className="w-8 h-8" />, title: "Dažādība", subtitle: "Daudz dažādu iespēju", color: "text-purple-500" }
                             ].map((stat, index) => (
                                 <div 
                                     key={index}
@@ -441,7 +441,7 @@ export default function Welcome({ auth }) {
                                         { text: "API atslēgas", icon: <Check className="w-4 h-4 text-green-500" /> },
                                         { text: "Rate limiting", icon: <Check className="w-4 h-4 text-green-500" /> },
                                         { text: "CORS atbalsts", icon: <Check className="w-4 h-4 text-green-500" /> },
-                                        { text: "HTTPS šifrēšana", icon: <X className="w-4 h-4 text-red-500" /> }
+                                        { text: "HTTPS šifrēšana", icon: <Check className="w-4 h-4 text-green-500" /> }
                                     ],
                                     color: "from-red-500 to-pink-500"
                                 },
@@ -527,7 +527,7 @@ export default function Welcome({ auth }) {
                             <div className="text-center md:text-right">
                                 <div className="flex items-center justify-center md:justify-end mb-2">
                                     <p className="text-gray-600">
-                                        &copy; 2025 API Builder
+                                        &copy; 2026 API Builder
                                     </p>
                                 </div>
                                 <div className="flex items-center justify-center md:justify-end space-x-2">
