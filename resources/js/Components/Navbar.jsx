@@ -43,7 +43,7 @@ export default function Navbar() {
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
                         </a>
                         <a href="/Create" className="relative px-4 py-2 text-gray-600 hover:text-black font-medium transition-all duration-200 rounded-full hover:bg-gray-100 group">
-                            <span className="relative z-10">Create</span>
+                            <span className="relative z-10">Izveidot API</span>
                             <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-blue-500 rounded-full opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
                         </a>
                         <a href="/public-apis" className="relative px-4 py-2 text-gray-600 hover:text-black font-medium transition-all duration-200 rounded-full hover:bg-gray-100 group">

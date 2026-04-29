@@ -2,19 +2,17 @@ import { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
 
 export default function ApiEditorModal({ show, onClose, onSave, onDelete, initialData }) {
-    const { auth } = usePage().props; // <- ja inertia padod user datus
+    const { auth } = usePage().props;
 
     const [formData, setFormData] = useState({
         route: "",
         format: "json",
         visibility: "public",
-        schema: "",
         allow_get: false,
         allow_post: false,
         allow_put: false,
         allow_delete: false,
         password: "",
-        sub_paths: [],
     });
 
     const [loading, setLoading] = useState(false);
@@ -37,13 +35,11 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                     route: initialData.route || "",
                     format: initialData.format || "json",
                     visibility: initialData.visibility || "public",
-                    schema: initialData.schema || "",
                     allow_get: !!initialData.allow_get,
                     allow_post: !!initialData.allow_post,
                     allow_put: !!initialData.allow_put,
                     allow_delete: !!initialData.allow_delete,
                     password: "",
-                    sub_paths: initialData.sub_paths || [],
                 });
                 loadApiUsers();
             } else {
@@ -51,13 +47,11 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                     route: "",
                     format: "json",
                     visibility: "public",
-                    schema: "",
                     allow_get: false,
                     allow_post: false,
                     allow_put: false,
                     allow_delete: false,
                     password: "",
-                    sub_paths: [],
                 });
                 setApiUsers([]);
             }
@@ -119,7 +113,6 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             setUserRole("admin");
             setShowUserModal(false);
             loadApiUsers();
-
         } catch (err) {
             console.error("Kļūda pievienojot lietotāju:", err);
             setError("Neizdevās pievienot lietotāju. Lūdzu mēģiniet vēlreiz.");
@@ -151,7 +144,6 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
 
             setSuccess(data.message || "Lietotājs veiksmīgi noņemts!");
             loadApiUsers();
-
         } catch (err) {
             console.error("Kļūda noņemot lietotāju:", err);
             setError("Neizdevās noņemt lietotāju. Lūdzu mēģiniet vēlreiz.");
@@ -185,7 +177,6 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
 
             setSuccess(data.message || "Loma veiksmīgi atjaunota!");
             loadApiUsers();
-
         } catch (err) {
             console.error("Kļūda mainot lomu:", err);
             setError("Neizdevās mainīt lomu. Lūdzu mēģiniet vēlreiz.");
@@ -203,30 +194,6 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
             [name]: type === "checkbox" ? checked : value,
         }));
         if (error) setError("");
-    }
-    const handleSubPathChange = (index, field, value) => {
-        setFormData((prev) => {
-            const newSubPaths = [...prev.sub_paths];
-            newSubPaths[index] = { ...newSubPaths[index], [field]: value };
-            return { ...prev, sub_paths: newSubPaths };
-        });
-    };
-    const addSubPath = () => {
-        setFormData((prev) => ({
-            ...prev,
-            sub_paths: [
-                ...prev.sub_paths,
-                { path: "", allow_get: false, allow_post: false, allow_put: false, allow_delete: false },
-            ],
-        }));
-    };
-
-    const removeSubPath = (index) => {
-        setFormData((prev) => {
-            const newSubPaths = [...prev.sub_paths];
-            newSubPaths.splice(index, 1);
-            return { ...prev, sub_paths: newSubPaths };
-        });
     };
 
     const handleSubmit = async () => {
@@ -327,15 +294,8 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
         }
     };
 
-    const confirmDelete = () => {
-        setShowDeleteConfirm(true);
-    };
-
-    const cancelDelete = () => {
-        setShowDeleteConfirm(false);
-    };
-    if (!show) return null;
-
+    const confirmDelete = () => setShowDeleteConfirm(true);
+    const cancelDelete = () => setShowDeleteConfirm(false);
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
@@ -451,262 +411,112 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                             DELETE
                         </label>
                     </div>
-                    <div className="space-y-4">
-                    <input
-                        type="text"
-                        name="route"
-                        value={formData.route}
-                        onChange={handleChange}
-                        placeholder="Route (piemēram: /mani-dati)"
-                        className="w-full border rounded-lg px-3 py-2 text-sm sm:text-base focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                </div>
+
+                {/* <div className="flex gap-3 justify-end mt-6 mb-6">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
                         disabled={loading}
-                    />
+                    >
+                        Aizvērt
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        disabled={loading}
+                    >
+                        {loading ? "Saglabā..." : "Saglabāt"}
+                    </button>
+                </div> */}
 
-                    {/* Sub paths */}
-                    <div className="mt-4">
-                        <h3 className="font-semibold mb-2">Sub paths</h3>
-                        {formData.sub_paths.map((sub, idx) => (
-                            <div key={idx} className="border p-3 rounded-lg mb-2 space-y-2">
-                                <input
-                                    type="text"
-                                    value={sub.path}
-                                    onChange={(e) => handleSubPathChange(idx, "path", e.target.value)}
-                                    placeholder="Sub path (piemēram: /details)"
-                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                                    disabled={loading}
-                                />
-                                <div className="grid grid-cols-2 gap-2">
-                                    {["get", "post", "put", "delete"].map((method) => (
-                                        <label key={method} className="flex items-center gap-2 text-sm">
-                                            <input
-                                                type="checkbox"
-                                                checked={sub[`allow_${method}`]}
-                                                onChange={(e) => handleSubPathChange(idx, `allow_${method}`, e.target.checked)}
-                                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                disabled={loading}
-                                            />
-                                            {method.toUpperCase()}
-                                        </label>
-                                    ))}
-                                </div>
+                {initialData?.id && (
+                    <div className="border-t pt-4">
+                        {/* <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold">Lietotāju pārvaldība</h3>
+                            {initialData.user_id === currentUserId && (
                                 <button
-                                    type="button"
-                                    onClick={() => removeSubPath(idx)}
-                                    className="text-red-600 text-xs hover:text-red-700"
+                                    onClick={() => setShowUserModal(true)}
+                                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
+                                    disabled={loading}
                                 >
-                                    Noņemt sub path
+                                    + Pievienot lietotāju
                                 </button>
-                            </div>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={addSubPath}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
-                            disabled={loading}
-                        >
-                            + Pievienot sub path
-                        </button>
-                    </div>
-
-                    <div className="flex justify-end gap-3 mt-6">
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
-                            disabled={loading}
-                        >
-                            Aizvērt
-                        </button>
-                        <button
-                            onClick={handleSubmit}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                            disabled={loading}
-                        >
-                            {loading ? "Saglabā..." : "Saglabāt"}
-                        </button>
-                    </div>
-                </div>
-
-                    {initialData?.id && (
-    <div className="border-t pt-4">
-        <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">Lietotāju pārvaldība</h3>
-
-            {/* Pievieno tikai ja esi owner */}
-            {initialData.user_id === currentUserId && (
-                <button
-                    onClick={() => setShowUserModal(true)}
-                    className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-medium"
-                    disabled={loading}
-                >
-                    + Pievienot lietotāju
-                </button>
-            )}
-        </div>
-
-                            {loadingUsers ? (
-                                <p className="text-gray-500 text-sm">Ielādē lietotājus...</p>
-                            ) : apiUsers.length > 0 ? (
-                                <div className="space-y-2 max-h-40 overflow-y-auto">
-                                    {apiUsers.length > 0 ? (
-                                        <div className="space-y-2 max-h-40 overflow-y-auto">
-                                            {apiUsers.map((user) => {
-                                                // Nosaka, vai pašreizējais lietotājs ir owner
-                                                const isOwner = initialData.user_id === currentUserId; // currentUserId jānodod kā props vai no Page props
-                                                // Nosaka, vai rādīt pārvaldības opcijas šim lietotājam
-                                                const canManage = isOwner && user.id !== initialData.user_id;
-
-                                                // Nosaka role: pivot.role ja shared, owner ja īpašnieks
-                                                const roleLabel = user.id === initialData.user_id
-                                                    ? 'owner'
-                                                    : user.pivot?.role || 'unknown';
-
-                                                return (
-                                                    <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                                        <div className="flex-1">
-                                                            <p className="text-sm font-medium">{user.name}</p>
-                                                            <p className="text-xs text-gray-500">{user.email}</p>
-                                                            <p className="text-xs text-gray-400">Role: {roleLabel}</p>
-                                                        </div>
-
-                                                        {canManage && (
-                                                            <div className="flex items-center gap-2">
-                                                                <select
-                                                                    value={user.pivot?.role || 'admin'}
-                                                                    onChange={(e) => handleUpdateUserRole(user.id, e.target.value)}
-                                                                    className="text-xs border rounded px-2 py-1"
-                                                                    disabled={loading}
-                                                                >
-                                                                    <option value="admin">Admin</option>
-                                                                    <option value="co-owner">Co-owner</option>
-                                                                </select>
-                                                                <button
-                                                                    onClick={() => handleRemoveUser(user.id)}
-                                                                    className="text-red-600 hover:text-red-700 text-xs"
-                                                                    disabled={loading}
-                                                                >
-                                                                    Noņemt
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : (
-                                        <p className="text-gray-500 text-sm">Nav pievienotu lietotāju</p>
-                                    )}
-
-
-
-                                </div>
-                            ) : (
-                                <p className="text-gray-500 text-sm">Nav pievienotu lietotāju</p>
                             )}
-                        </div>
-                    )}
+                        </div> */}
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm sm:text-base font-medium text-blue-700 disabled:opacity-50"
-                            onClick={() => {
-                                if (initialData?.id) {
-                                    window.location.href = `/api-editor/${initialData.id}`;
-                                }
-                            }}
-                            disabled={loading || !initialData?.id}
-                        >
-                            Editor
-                        </button>
-                        <button
-                            className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm sm:text-base font-medium text-green-700 disabled:opacity-50"
-                            onClick={() => {
-                                if (initialData?.id) {
-                                    window.location.href = `/api-statistics/${initialData.id}`;
-                                }
-                            }}
-                            disabled={loading || !initialData?.id}
-                        >
-                            Statistika
-                        </button>
+                        {loadingUsers ? (
+                            <p className="text-gray-500 text-sm">Ielādē lietotājus...</p>
+                        ) : apiUsers.length > 0 ? (
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {apiUsers.map((user) => {
+                                    const isOwner = initialData.user_id === currentUserId;
+                                    const canManage = isOwner && user.id !== initialData.user_id;
+                                    const roleLabel = user.id === initialData.user_id
+                                        ? "owner"
+                                        : user.pivot?.role || "unknown";
+
+                                    return (
+                                        <div key={user.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">{user.name}</p>
+                                                <p className="text-xs text-gray-500">{user.email}</p>
+                                                <p className="text-xs text-gray-400">Role: {roleLabel}</p>
+                                            </div>
+                                            {canManage && (
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        value={user.pivot?.role || "admin"}
+                                                        onChange={(e) => handleUpdateUserRole(user.id, e.target.value)}
+                                                        className="text-xs border rounded px-2 py-1"
+                                                        disabled={loading}
+                                                    >
+                                                        <option value="admin">Admin</option>
+                                                        <option value="co-owner">Co-owner</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => handleRemoveUser(user.id)}
+                                                        className="text-red-600 hover:text-red-700 text-xs"
+                                                        disabled={loading}
+                                                    >
+                                                        Noņemt
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-sm">Nav pievienotu lietotāju</p>
+                        )}
                     </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                    <button
+                        className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm sm:text-base font-medium text-blue-700 disabled:opacity-50"
+                        onClick={() => {
+                            if (initialData?.id) {
+                                window.location.href = `/api-editor/${initialData.id}`;
+                            }
+                        }}
+                        disabled={loading || !initialData?.id}
+                    >
+                        Editor
+                    </button>
+                    <button
+                        className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm sm:text-base font-medium text-green-700 disabled:opacity-50"
+                        onClick={() => {
+                            if (initialData?.id) {
+                                window.location.href = `/api-statistics/${initialData.id}`;
+                            }
+                        }}
+                        disabled={loading || !initialData?.id}
+                    >
+                        Statistika
+                    </button>
                 </div>
-
-                {showUserModal && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-                        <div className="bg-white rounded-lg p-6 max-w-sm mx-4 w-full">
-                            <h3 className="text-lg font-semibold mb-4">Pievienot lietotāju</h3>
-
-                            <div className="space-y-3">
-                                <input
-                                    type="email"
-                                    placeholder="Lietotāja e-pasts"
-                                    value={userEmail}
-                                    onChange={(e) => setUserEmail(e.target.value)}
-                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                                    disabled={loading}
-                                />
-
-                                <select
-                                    value={userRole}
-                                    onChange={(e) => setUserRole(e.target.value)}
-                                    className="w-full border rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                                    disabled={loading}
-                                >
-                                    <option value="admin">Admin (var rediģēt tikai datu struktūru)</option>
-                                    <option value="co-owner">Co-owner (pilnas tiesības, izņemot lietotāju pārvaldību)</option>
-                                </select>
-                            </div>
-
-                            <div className="flex gap-3 justify-end mt-4">
-                                <button
-                                    onClick={() => {
-                                        setShowUserModal(false);
-                                        setUserEmail("");
-                                        setUserRole("admin");
-                                    }}
-                                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                                    disabled={loading}
-                                >
-                                    Atcelt
-                                </button>
-                                <button
-                                    onClick={handleAddUser}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
-                                    disabled={loading || !userEmail.trim()}
-                                >
-                                    {loading ? "Pievieno..." : "Pievienot"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {showDeleteConfirm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
-                        <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-                            <h3 className="text-lg font-semibold mb-2">Apstiprināt dzēšanu</h3>
-                            <p className="text-gray-600 mb-4">
-                                Vai tiešām vēlies dzēst šo API? Šo darbību nevar atsaukt.
-                            </p>
-                            <div className="flex gap-3 justify-end">
-                                <button
-                                    onClick={cancelDelete}
-                                    className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                                    disabled={loading}
-                                >
-                                    Atcelt
-                                </button>
-                                <button
-                                    onClick={handleDelete}
-                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                                    disabled={loading}
-                                >
-                                    {loading ? "Dzēš..." : "Dzēst"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6">
                     <div className="w-full sm:w-auto order-3 sm:order-1">
@@ -739,6 +549,80 @@ export default function ApiEditorModal({ show, onClose, onSave, onDelete, initia
                     </div>
                 </div>
             </div>
+
+            {showUserModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                    <div className="bg-white rounded-lg p-6 max-w-sm mx-4 w-full">
+                        <h3 className="text-lg font-semibold mb-4">Pievienot lietotāju</h3>
+                        <div className="space-y-3">
+                            <input
+                                type="email"
+                                placeholder="Lietotāja e-pasts"
+                                value={userEmail}
+                                onChange={(e) => setUserEmail(e.target.value)}
+                                className="w-full border rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                disabled={loading}
+                            />
+                            <select
+                                value={userRole}
+                                onChange={(e) => setUserRole(e.target.value)}
+                                className="w-full border rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                disabled={loading}
+                            >
+                                <option value="admin">Admin (var rediģēt tikai datu struktūru)</option>
+                                <option value="co-owner">Co-owner (pilnas tiesības, izņemot lietotāju pārvaldību)</option>
+                            </select>
+                        </div>
+                        <div className="flex gap-3 justify-end mt-4">
+                            <button
+                                onClick={() => {
+                                    setShowUserModal(false);
+                                    setUserEmail("");
+                                    setUserRole("admin");
+                                }}
+                                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                                disabled={loading}
+                            >
+                                Atcelt
+                            </button>
+                            <button
+                                onClick={handleAddUser}
+                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                                disabled={loading || !userEmail.trim()}
+                            >
+                                {loading ? "Pievieno..." : "Pievienot"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                    <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+                        <h3 className="text-lg font-semibold mb-2">Apstiprināt dzēšanu</h3>
+                        <p className="text-gray-600 mb-4">
+                            Vai tiešām vēlies dzēst šo API? Šo darbību nevar atsaukt.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={cancelDelete}
+                                className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                                disabled={loading}
+                            >
+                                Atcelt
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                disabled={loading}
+                            >
+                                {loading ? "Dzēš..." : "Dzēst"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -75,20 +75,7 @@ export default function ManiApi() {
         setShowEditor(true);
     };
 
-    useEffect(() => {
-        if (resources && resources.length > 0) {
-            resources.forEach((res) => {
-                console.log("Galvenais route:", res.route);
-                if (res.sub_routes && res.sub_routes.length > 0) {
-                    res.sub_routes.forEach((sub) => {
-                        console.log(` - Sub_path: ${sub.sub_path}, Method: ${sub.method}`);
-                    });
-                } else {
-                    console.log(" - Nav sub-routes");
-                }
-            });
-        }
-    }, [resources]);
+
     
 
     const handleCloseEditor = () => {

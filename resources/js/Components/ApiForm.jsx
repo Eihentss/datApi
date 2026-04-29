@@ -8,8 +8,6 @@ export default function ApiForm({ onToast, data, setData }) {
     const [isPrivate, setIsPrivate] = useState(false);
     const [format, setFormat] = useState("json");
     const [password, setPassword] = useState("");
-    
-    const [additionalRoutes, setAdditionalRoutes] = useState([]);
 
     const handleRouteChange = (e) => {
         let value = e.target.value;
@@ -27,44 +25,11 @@ export default function ApiForm({ onToast, data, setData }) {
         }
     };
 
-    const handleSubRouteChange = (id, value) => {
-        if (value.startsWith("/")) {
-            value = value.substring(1);
-        }
-        setAdditionalRoutes(
-            additionalRoutes.map(route =>
-                route.id === id ? { ...route, subPath: value } : route
-            )
-        );
-    };
-
-    const addAdditionalRoute = () => {
-        if (additionalRoutes.length < 4) {
-            setAdditionalRoutes([
-                ...additionalRoutes,
-                { id: Date.now(), method: "GET", subPath: "" }
-            ]);
-        }
-    };
-
-    const removeAdditionalRoute = (id) => {
-        setAdditionalRoutes(additionalRoutes.filter(route => route.id !== id));
-    };
-
-    const updateRouteMethod = (id, method) => {
-        setAdditionalRoutes(
-            additionalRoutes.map(route =>
-                route.id === id ? { ...route, method } : route
-            )
-        );
-    };
-
     const resetForm = () => {
         setMainRoute("");
         setIsPrivate(false);
         setPassword("");
         setFormat("json");
-        setAdditionalRoutes([]);
         setData('{\n  "example": "value"\n}');
     };
 
@@ -86,14 +51,6 @@ export default function ApiForm({ onToast, data, setData }) {
             return;
         }
     
-        // Pārbaudam papildus route ievades
-        for (let route of additionalRoutes) {
-            if (!route.subPath || route.subPath.trim() === "") {
-                onToast({ message: "Visi papildus route ceļi jābūt aizpildītiem!", type: "error" });
-                return;
-            }
-        }
-    
         // Validē JSON shēmu
         let schemaObj;
         try {
@@ -110,25 +67,13 @@ export default function ApiForm({ onToast, data, setData }) {
             visibility: isPrivate ? "private" : "public",
             password: isPrivate ? password : null,
             schema: schemaObj,
-            sub_routes: [
-                {
-                  sub_path: mainRoute.replace(/^\//, ""), // noņem sākuma /
-                  method: "GET",
-                  is_main: true,
-                },
-                ...additionalRoutes.map((r) => ({
-                  sub_path: r.subPath,
-                  method: r.method,
-                  is_main: false,
-                })),
-            ],
         };
     
         try {
             await axios.post("/api-resources", payload);
     
             onToast({
-                message: `API saglabāts ar ${payload.sub_routes.length} route!`,
+                message: `API saglabāts veiksmīgi!`,
                 type: "success",
             });
             resetForm();
@@ -199,104 +144,6 @@ export default function ApiForm({ onToast, data, setData }) {
                         <span className="text-xs text-gray-500">Galvenais</span>
                     </div>
                 </motion.div>
-            )}
-
-            {/* Papildus routes */}
-            <AnimatePresence>
-                {additionalRoutes.map((route, index) => (
-                    <motion.div
-                        key={route.id}
-                        initial={{ opacity: 0, height: 0, y: -20 }}
-                        animate={{ opacity: 1, height: "auto", y: 0 }}
-                        exit={{ opacity: 0, height: 0, y: -20 }}
-                        className="bg-gray-50 rounded-xl p-4 border border-gray-200"
-                    >
-                        <div className="flex items-center gap-3 mb-3">
-                            <span className="text-xs text-gray-500 font-semibold">
-                                Route #{index + 2}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => removeAdditionalRoute(route.id)}
-                                className="ml-auto text-red-500 hover:text-red-700 text-sm font-bold transition-colors"
-                            >
-                                ✕ Dzēst
-                            </button>
-                        </div>
-                        
-                        <div className="space-y-3">
-                            <div>
-                                <label className="block text-xs font-semibold mb-2 text-gray-700">
-                                    Route ceļš
-                                </label>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-500 font-mono text-sm">{mainRoute}/</span>
-                                    <input
-                                        type="text"
-                                        value={route.subPath}
-                                        onChange={(e) => handleSubRouteChange(route.id, e.target.value)}
-                                        placeholder="lietotaji"
-                                        className="flex-1 border-2 border-gray-300 rounded-lg px-3 py-2 focus:border-black focus:ring-2 focus:ring-gray-200 outline-none transition-all font-mono text-sm"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold mb-2 text-gray-700">
-                                    Metode
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {["GET", "POST", "PUT", "DELETE"].map((method) => (
-                                        <label key={method} className="relative cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name={`method-${route.id}`}
-                                                checked={route.method === method}
-                                                onChange={() => updateRouteMethod(route.id, method)}
-                                                className="sr-only peer"
-                                            />
-                                            <div
-                                                className={`flex items-center justify-center
-                                                    h-10 px-2 rounded-lg border-2 
-                                                    font-bold text-xs
-                                                    transition-all duration-200
-                                                    ${route.method === method
-                                                        ? "bg-black border-black text-white"
-                                                        : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
-                                                    }`}
-                                            >
-                                                {method}
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            
-                            {mainRoute && !routeError && route.subPath && (
-                                <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                                    <span className="text-xs text-gray-500">Preview:</span>
-                                    <span className="font-mono text-xs text-gray-700 font-semibold">
-                                        {mainRoute}/{route.subPath}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                ))}
-            </AnimatePresence>
-
-            {/* Pievienot papildus route pogu */}
-            {additionalRoutes.length < 4 && mainRoute && !routeError && (
-                <motion.button
-                    type="button"
-                    onClick={addAdditionalRoute}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full border-2 border-dashed border-gray-300 rounded-xl py-3 text-gray-600 hover:border-black hover:text-black hover:bg-gray-50 transition-all font-semibold text-sm flex items-center justify-center gap-2"
-                >
-                    <span className="text-xl">+</span>
-                    Pievienot Route ({additionalRoutes.length}/4)
-                </motion.button>
             )}
 
             <div className="rounded-xl p-4 border border-gray-200">

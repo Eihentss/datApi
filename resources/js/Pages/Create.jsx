@@ -13,7 +13,7 @@ export default function Create() {
 
     return (
         <>
-            <Head title="Create" />
+            <Head title="Izveidot API resursu" />
             <div className="min-h-screen bg-gray-50 text-black">
                 <Navbar auth={auth} />
                 <main className="pt-24 max-w mx-auto px-4 sm:px-6 lg:px-8">
