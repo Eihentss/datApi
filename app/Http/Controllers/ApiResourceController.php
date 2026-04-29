@@ -323,6 +323,10 @@ class ApiResourceController extends Controller
                     'route' => $api->route,
                     'format' => $api->format,
                     'visibility' => $api->visibility,
+                    'allow_get' => $api->allow_get,
+                    'allow_post' => $api->allow_post,
+                    'allow_put' => $api->allow_put,
+                    'allow_delete' => $api->allow_delete,
                     'user_role' => 'owner',
                     'created_at' => $api->created_at,
                 ];
@@ -337,6 +341,10 @@ class ApiResourceController extends Controller
                     'route' => $api->route,
                     'format' => $api->format,
                     'visibility' => $api->visibility,
+                    'allow_get' => $api->allow_get,
+                    'allow_post' => $api->allow_post,
+                    'allow_put' => $api->allow_put,
+                    'allow_delete' => $api->allow_delete,
                     'user_role' => $api->pivot->role ?? null,
                     'created_at' => $api->created_at,
                 ];

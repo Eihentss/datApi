@@ -28,6 +28,15 @@ export default function ApiCard({ resource, onEdit, onOpen }) {
                 </h2>
                 <p>
                     <strong>Formāts:</strong> {resource.format.toUpperCase()} <br />
+                    <strong>Metodes:</strong>{" "}
+                    {[
+                        resource.allow_get && "GET",
+                        resource.allow_post && "POST",
+                        resource.allow_put && "PUT",
+                        resource.allow_delete && "DELETE",
+                    ]
+                        .filter(Boolean)
+                        .join(", ")}
                 </p>
             </div>
 

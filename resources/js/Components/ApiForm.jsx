@@ -8,6 +8,10 @@ export default function ApiForm({ onToast, data, setData }) {
     const [isPrivate, setIsPrivate] = useState(false);
     const [format, setFormat] = useState("json");
     const [password, setPassword] = useState("");
+    const [allowGet, setAllowGet] = useState(false);
+    const [allowPost, setAllowPost] = useState(false);
+    const [allowPut, setAllowPut] = useState(false);
+    const [allowDelete, setAllowDelete] = useState(false);
 
     const handleRouteChange = (e) => {
         let value = e.target.value;
@@ -30,6 +34,10 @@ export default function ApiForm({ onToast, data, setData }) {
         setIsPrivate(false);
         setPassword("");
         setFormat("json");
+        setAllowGet(false);
+        setAllowPost(false);
+        setAllowPut(false);
+        setAllowDelete(false);
         setData('{\n  "example": "value"\n}');
     };
 
@@ -67,6 +75,10 @@ export default function ApiForm({ onToast, data, setData }) {
             visibility: isPrivate ? "private" : "public",
             password: isPrivate ? password : null,
             schema: schemaObj,
+            allow_get: allowGet,
+            allow_post: allowPost,
+            allow_put: allowPut,
+            allow_delete: allowDelete,
         };
     
         try {
@@ -95,9 +107,7 @@ export default function ApiForm({ onToast, data, setData }) {
             </div>
 
             <div>
-                <label className="block text-sm font-semibold mb-2 text-black">
-                    Galvenais Route
-                </label>
+
                 <div className="relative">
                     <input
                         type="text"
@@ -125,26 +135,6 @@ export default function ApiForm({ onToast, data, setData }) {
                     )}
                 </AnimatePresence>
             </div>
-
-            {mainRoute && !routeError && (
-                <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gray-50 rounded-xl p-4 border border-gray-200"
-                >
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <span className="bg-black text-white text-xs font-bold px-3 py-1.5 rounded-lg">
-                                GET
-                            </span>
-                            <span className="font-mono text-sm text-gray-700">
-                                {mainRoute}
-                            </span>
-                        </div>
-                        <span className="text-xs text-gray-500">Galvenais</span>
-                    </div>
-                </motion.div>
-            )}
 
             <div className="rounded-xl p-4 border border-gray-200">
                 <label className="flex items-center gap-3 cursor-pointer group">
@@ -176,7 +166,7 @@ export default function ApiForm({ onToast, data, setData }) {
                     >
                         <div className=" border border-gray-300 rounded-xl p-4 space-y-2">
                             <label className="block text-sm font-semibold text-black">
-                                🔒 Parole
+                                Parole
                             </label>
                             <input
                                 type="password"
@@ -191,6 +181,50 @@ export default function ApiForm({ onToast, data, setData }) {
             </AnimatePresence>
 
             <div>
+                <label className="block text-sm font-semibold mb-3 text-black">
+                    HTTP Metodes
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                    <label className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer transition-all">
+                        <input
+                            type="checkbox"
+                            checked={allowGet}
+                            onChange={(e) => setAllowGet(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-black cursor-pointer"
+                        />
+                        <span className="text-sm font-semibold text-black">GET</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer transition-all">
+                        <input
+                            type="checkbox"
+                            checked={allowPost}
+                            onChange={(e) => setAllowPost(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-black cursor-pointer"
+                        />
+                        <span className="text-sm font-semibold text-black">POST</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer transition-all">
+                        <input
+                            type="checkbox"
+                            checked={allowPut}
+                            onChange={(e) => setAllowPut(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-black cursor-pointer"
+                        />
+                        <span className="text-sm font-semibold text-black">PUT</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer transition-all">
+                        <input
+                            type="checkbox"
+                            checked={allowDelete}
+                            onChange={(e) => setAllowDelete(e.target.checked)}
+                            className="w-4 h-4 rounded border-gray-300 text-black focus:ring-2 focus:ring-black cursor-pointer"
+                        />
+                        <span className="text-sm font-semibold text-black">DELETE</span>
+                    </label>
+                </div>
+            </div>
+
+            <div>
                 <label className="block text-sm font-semibold mb-2 text-black">
                     Datu formāts
                 </label>
@@ -199,8 +233,8 @@ export default function ApiForm({ onToast, data, setData }) {
                     onChange={(e) => setFormat(e.target.value)}
                     className="w-full border-2 border-gray-300 rounded-xl p-3 px-4 focus:border-black focus:ring-4 focus:ring-gray-200 outline-none transition-all cursor-pointer bg-white"
                 >
-                    <option value="json">📄 JSON</option>
-                    <option value="xml">📋 XML</option>
+                    <option value="json">JSON</option>
+                    <option value="xml">XML</option>
                 </select>
             </div>
 
