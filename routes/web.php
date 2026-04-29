@@ -2,6 +2,9 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\ApiResourceController;
+use App\Http\Controllers\ApiResourceStatisticsController;
+use App\Http\Controllers\ApiResourceImageController;
+use App\Http\Controllers\ApiResourceUserController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -66,18 +69,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('api-editor')
         ->where('apiResource', '[0-9]+');
 
-    Route::get('/api-statistics/{apiResource}', [ApiResourceController::class, 'statistics'])
+    Route::get('/api-statistics/{apiResource}', [ApiResourceStatisticsController::class, 'show'])
         ->name('api-statistics')
         ->where('apiResource', '[0-9]+');
 
-    Route::get('/api-resources/{apiResource}/users', [ApiResourceController::class, 'getApiUsers']);
-    Route::post('/api-resources/{apiResource}/add-user', [ApiResourceController::class, 'addUserToApi']);
-    Route::delete('/api-resources/{apiResource}/remove-user/{userId}', [ApiResourceController::class, 'removeUserFromApi']);
-    Route::put('/api-resources/{apiResource}/update-user-role/{userId}', [ApiResourceController::class, 'updateUserRole']);
+    Route::get('/api-resources/{apiResource}/users', [ApiResourceUserController::class, 'index']);
+    Route::post('/api-resources/{apiResource}/add-user', [ApiResourceUserController::class, 'store']);
+    Route::delete('/api-resources/{apiResource}/remove-user/{userId}', [ApiResourceUserController::class, 'destroy']);
+    Route::put('/api-resources/{apiResource}/update-user-role/{userId}', [ApiResourceUserController::class, 'update']);
 
 });
 
-Route::post('/api-resources/{apiResource}/upload-image', [ApiResourceController::class, 'uploadImage'])
+Route::post('/api-resources/{apiResource}/upload-image', [ApiResourceImageController::class, 'store'])
     ->middleware('auth');
 
 Route::post('/images', [ImageResourceController::class, 'store']);
