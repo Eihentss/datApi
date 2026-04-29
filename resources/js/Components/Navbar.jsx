@@ -155,7 +155,7 @@ export default function Navbar() {
                     </a>
                     <a href="/Create" className="group flex items-center text-gray-600 hover:text-black py-3 px-4 hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 rounded-xl transition-all duration-200 font-medium">
                         <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                        Create
+                        Izveidot API
                     </a>
                     <a href="/public-apis" className="group flex items-center text-gray-600 hover:text-black py-3 px-4 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 rounded-xl transition-all duration-200 font-medium">
                         <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
